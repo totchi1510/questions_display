@@ -1,0 +1,1 @@
+-- empty migration for CI test
