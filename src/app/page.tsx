@@ -1,9 +1,20 @@
 import Image from "next/image";
+import { supabase } from "@/lib/supabase";
 
-export default function Home() {
+export default async function Home() {
   return (
     <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
       <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
+        {/* --- 環境&接続ステータス --- */}
+        {(() => {
+          const envOk = !!process.env.NEXT_PUBLIC_SUPABASE_URL && !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+          return (
+            <div className="w-full text-xs sm:text-sm rounded-lg border border-black/10 dark:border-white/15 p-3">
+              <Status envOk={envOk} />
+            </div>
+          );
+        })()}
+
         <Image
           className="dark:invert"
           src="/next.svg"
@@ -99,5 +110,35 @@ export default function Home() {
         </a>
       </footer>
     </div>
+  );
+}
+
+async function Status({ envOk }: { envOk: boolean }) {
+  let supa = "skip";
+  if (envOk) {
+    const { error } = await supabase.from("questions").select("id").limit(1);
+    supa = error ? "error (テーブル未作成でもここは想定内)" : "ok";
+  }
+  return (
+    <div className="flex flex-wrap items-center gap-3">
+      <span className="font-semibold">環境チェック</span>
+      <Badge label={`ENV: ${envOk ? "ok" : "missing"}`} ok={envOk} />
+      <Badge label={`Supabase: ${supa}`} ok={supa === "ok"} />
+    </div>
+  );
+}
+
+function Badge({ label, ok }: { label: string; ok: boolean }) {
+  return (
+    <span
+      className={[
+        "inline-flex items-center rounded-full px-2 py-1 text-xs",
+        ok
+          ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
+          : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
+      ].join(" ")}
+    >
+      {label}
+    </span>
   );
 }

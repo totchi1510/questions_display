@@ -1,0 +1,8 @@
+{
+  "version": 2,
+  "routes": [
+    { "src": "^/favicon\\.ico$", "dest": "/favicon.ico" },
+    { "src": "/(.*)", "dest": "/" }
+  ],
+  "github": { "enabled": true }
+}
