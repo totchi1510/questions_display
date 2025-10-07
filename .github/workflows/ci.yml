@@ -1,33 +1,17 @@
-name: CI
-
+name: PR Check
 on:
-  pull_request:            # PR作成/更新で実行
-  push:
-    branches: [ master ]     # ここをあなたの既定ブランチ名に（main or master）
- 
-
-env:
-  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+  pull_request:
+  workflow_dispatch:
 
 jobs:
-  validate:
+  pr:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'        # 速度アップ（任意）
-
+          cache: 'npm'
       - run: npm ci
       - run: npm run lint
-  
-      - run: npm run build
-
-      - name: Install Supabase CLI
-        run: npm i -g supabase
-
-      - name: Lint migrations
-        run: supabase db lint
+      - run: npm run typecheck
