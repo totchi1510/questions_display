@@ -1,5 +1,6 @@
+
 import Image from "next/image";
-import { getSupabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase";
 
 export default async function Home() {
   return (
