@@ -92,6 +92,7 @@ jobs:
     name: Apply migrations to Supabase
     runs-on: ubuntu-latest
     needs: [lint, db-verify]
+
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
@@ -108,8 +109,6 @@ jobs:
       - name: Install dependencies (includes Supabase CLI)
         run: npm ci
 
-      - name: Supabase login
-        run: npx supabase login --token "$SUPABASE_ACCESS_TOKEN"
 
       - name: Link Supabase project
         run: npx supabase link --project-ref "$SUPABASE_PROJECT_REF"
