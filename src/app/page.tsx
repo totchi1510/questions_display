@@ -1,11 +1,41 @@
 
 import Image from "next/image";
+import { cookies } from "next/headers";
+import { parseSessionToken } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 
 export default async function Home() {
+  const cookieStore = await cookies();
+  const sessionCookie = cookieStore.get("qd_session")?.value;
+  const session = parseSessionToken(sessionCookie);
+
   return (
     <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
       <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
+        <div className="w-full text-xs sm:text-sm rounded-lg border border-black/10 dark:border-white/15 p-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="font-semibold">セッション</span>
+            <Badge label={`Role: ${session?.role ?? "none"}`} ok={!!session} />
+            {!session ? (
+              <>
+                <a className="underline" href="/auth/qr?token=demo-viewer">
+                  demo-viewer
+                </a>
+                <a className="underline" href="/auth/qr?token=demo-moderator">
+                  demo-moderator
+                </a>
+                <a className="underline" href="/auth/qr?token=demo-admin">
+                  demo-admin
+                </a>
+              </>
+            ) : (
+              <a className="underline" href="/logout">
+                logout
+              </a>
+            )}
+          </div>
+        </div>
+
         {/* --- 環境&接続ステータス --- */}
         {(() => {
           const envOk = !!process.env.NEXT_PUBLIC_SUPABASE_URL && !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
