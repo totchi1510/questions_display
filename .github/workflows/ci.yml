@@ -30,9 +30,44 @@ jobs:
       - name: Run lint
         run: npm run lint
 
+  db-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify migrations structure
+        shell: bash
+        run: |
+          set -euo pipefail
+          dir="supabase/migrations"
+          if [ ! -d "$dir" ]; then
+            echo "Missing migration directory: $dir" >&2
+            exit 1
+          fi
+          shopt -s nullglob
+          files=("$dir"/*.sql)
+          if (( ${#files[@]} == 0 )); then
+            echo "No migration files found in $dir" >&2
+            exit 1
+          fi
+          fail=0
+          for f in "${files[@]}"; do
+            base=$(basename "$f")
+            if [[ ! "$base" =~ ^[0-9]{14}_[a-z0-9_-]+\.sql$ ]]; then
+              echo "Invalid migration filename: $base" >&2
+              fail=1
+            fi
+            if ! file "$f" | grep -qi 'text'; then
+              echo "Migration is not a text file: $base" >&2
+              fail=1
+            fi
+          done
+          exit $fail
+
   build:
     runs-on: ubuntu-latest
-    needs: lint
+    needs: [lint, db-verify]
     env:
       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
