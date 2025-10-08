@@ -109,9 +109,7 @@ jobs:
         run: npm ci
 
       - name: Supabase login
-        run: |
-          fi
-          npx supabase login --token "$SUPABASE_ACCESS_TOKEN"
+        run: npx supabase login --token "$SUPABASE_ACCESS_TOKEN"
 
       - name: Link Supabase project
         run: npx supabase link --project-ref "$SUPABASE_PROJECT_REF"
