@@ -9,16 +9,16 @@
 * **やること**：
 
   * Next.js 雛形作成（App Router構成）
-  * Supabase プロジェクト接続
-  * `.env.local.example` + `.env.vercel.example` 整備
-  * `vercel.json` の雛形追加（リダイレクト・環境変数の明示）
+  * Supabase プロジェクト接続（`NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` をローカル `.env.local` と GitHub Secrets・Vercel Env に設定）
+  * 環境変数テンプレ（例：`.env.local.example`）は任意。共有したい場合のみ追加
+  * `vercel.json` は必要な設定が出た時点で追加（Next.js デフォルトで足りるうちは不要）
 * **セーブ位置**：`v0.1.0-init`
 
-  * 保存物：`README`, `.env.local.example`, `.env.vercel.example`, `vercel.json`
+  * 保存物：`README`（セットアップ手順）
   * 確認：
 
     * ローカル (`npm run dev`) でトップページが表示される
-    * Vercel Preview Deploy が成功
+    * Vercel Preview Deploy が成功（環境変数が反映されていること）
   * ロールバック：初期雛形まで戻せる状態
 
 ### 0-2 DBマイグレーション運用ルール作成
@@ -91,6 +91,22 @@
 
   * 保存物：`docs/routes.md`
   * 確認：ビルド後のVercel Previewでルート確認
+
+### 2-3 初期マイグレーション実装（DDL + RLS）
+
+* **目的**：合意済みスキーマをDBに反映し、匿名読み取りのRLSを付与
+* **やること**：
+
+  * `supabase/migrations/` に初期DDL（`*_init_schema.sql`）を追加
+  * RLS（匿名SELECTのみ）を別ファイルで追加
+  * CIの`db-verify`で命名・存在チェックを通過
+* **セーブ位置**：`v2.2.0-migrations-applied`
+
+  * 保存物：`supabase/migrations/*.sql`
+  * 確認：ローカル `supabase start` 環境で `db reset` → 起動成功
+  * CI（任意）：GitHub Secrets を設定すると、自動で `db push` 実行
+    - `SUPABASE_ACCESS_TOKEN`（アカウントのAccess Token）
+    - `SUPABASE_PROJECT_REF`（対象プロジェクトのProject Ref）
 
 ---
 

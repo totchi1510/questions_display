@@ -87,3 +87,30 @@ jobs:
 
       - name: Run build
         run: npm run build
+
+  db-push:
+    name: Apply migrations to Supabase (optional)
+    runs-on: ubuntu-latest
+    needs: [lint, db-verify]
+    if: ${{ secrets.SUPABASE_ACCESS_TOKEN != '' && secrets.SUPABASE_PROJECT_REF != '' }}
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies (includes Supabase CLI)
+        run: npm ci
+
+      - name: Link Supabase project
+        run: npx supabase link --project-ref "$SUPABASE_PROJECT_REF" --access-token "$SUPABASE_ACCESS_TOKEN"
+
+      - name: Apply migrations (db push)
+        run: npx supabase db push
