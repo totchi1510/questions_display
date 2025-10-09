@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.redirect(new URL('/?posted=1', req.url));
   } catch (e) {
-    console.error('ask POST error', e);
+    console.error('ask submit POST error', e);
     return NextResponse.redirect(new URL('/ask?error=server', req.url));
   }
 }

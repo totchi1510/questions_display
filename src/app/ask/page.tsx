@@ -4,7 +4,7 @@ export default function AskPage() {
   return (
     <div className="p-6 max-w-2xl mx-auto">
       <h1 className="text-xl font-semibold mb-4">質問を投稿</h1>
-      <form method="post" action="/ask" className="flex flex-col gap-3">
+      <form method="post" action="/ask/submit" className="flex flex-col gap-3">
         <textarea
           name="content"
           className="w-full min-h-32 p-2 border rounded"
@@ -22,4 +22,3 @@ export default function AskPage() {
     </div>
   );
 }
-
