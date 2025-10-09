@@ -116,13 +116,12 @@ export default async function Home() {
       <main className="flex flex-col items-center px-6 pb-24">
         <section className="w-full max-w-5xl flex flex-col items-center gap-8 py-16 text-center">
           <div className="space-y-4">
-            <p className="uppercase tracking-[0.3em] text-xs text-gray-500">question collective</p>
+
             <h1 className="text-4xl sm:text-5xl font-extrabold tracking-wide">
-              問いで世界をあたためる Q
+              問いのディスプレイ
             </h1>
             <p className="max-w-2xl mx-auto text-sm sm:text-base text-gray-600">
-              ひとつの問いが、次の会話と挑戦を生み出す。黄色と黒のミニマルなリズムで、
-              学びと対話が渦を巻くスペースをつくりました。
+              AI時代、問いを囲む人間同士の対話は私たちに何を気づかせる？
             </p>
           </div>
 
