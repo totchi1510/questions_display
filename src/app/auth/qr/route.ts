@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 import { createSessionCookie, Role } from '@/lib/auth';
 
 const allowDemoTokens =
-  process.env.ENABLE_DEMO_TOKENS === 'true' || process.env.NODE_ENV !== 'production';
+  process.env.ENABLE_DEMO_TOKENS === 'true';
 
 const TOKEN_TO_ROLE: Record<string, Role> = allowDemoTokens
   ? {
@@ -27,3 +27,4 @@ export async function GET(req: NextRequest) {
   res.cookies.set(cookie.name, cookie.value, cookie.options);
   return res;
 }
+

@@ -3,22 +3,82 @@ import { cookies } from "next/headers";
 import { parseSessionToken } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 
-interface QuestionCard {
+/* =========================
+ * Types
+ * =======================*/
+type QuestionCard = {
   id: string;
   content: string;
   created_at: string;
+};
+
+/* =========================
+ * Constants (UI保持)
+ * =======================*/
+const MONTH_LINKS = ["2025/10", "2025/9", "2025/8", "2025/7", "2025/6"] as const;
+
+/* =========================
+ * Helpers (UI保持のまま整理)
+ * =======================*/
+function QuestionTile({ item }: { item: QuestionCard }) {
+  return (
+    <article className="relative aspect-square rounded-[32px] border border-black/70 p-6 flex flex-col justify-between bg-white shadow-sm shadow-yellow-200/30">
+      <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-2xl">?</div>
+      <div className="text-sm leading-relaxed whitespace-pre-wrap break-words overflow-hidden">
+        {item.content}
+      </div>
+      <span className="text-xs text-gray-500 self-end">
+        {new Date(item.created_at).toLocaleDateString()}
+      </span>
+    </article>
+  );
 }
 
+function PlaceholderTile({ idx }: { idx: number }) {
+  return (
+    <div
+      key={`placeholder-${idx}`}
+      className="relative aspect-square rounded-[32px] border border-black/30 flex items-center justify-center text-2xl text-gray-300 bg-white/60"
+    >
+      <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-2xl text-gray-400">?</span>
+    </div>
+  );
+}
+
+function QuestionLetter({ className = "" }: { className?: string }) {
+  return (
+    <div className={`relative inline-block leading-none ${className}`} aria-hidden="true">
+      {/* ごく控えめな黄色オフセット */}
+      <span
+        className="absolute inset-0 -translate-x-[5.0px] translate-y-[5.0px] text-[#FAD55A] opacity-80 blur-[0.2px] select-none"
+        aria-hidden="true"
+      >
+        Q
+      </span>
+      {/* 本体（黒） */}
+      <span
+        className="relative text-black drop-shadow-[0_3px_8px_rgba(0,0,0,0.18)] select-none"
+      >
+        Q
+      </span>
+    </div>
+  );
+}
+
+
+
+/* =========================
+ * Data fetching
+ * =======================*/
 async function fetchQuestions(): Promise<{
   envReady: boolean;
   items: QuestionCard[];
   error?: string;
 }> {
-  const envReady =
-    !!process.env.NEXT_PUBLIC_SUPABASE_URL && !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!envReady) {
-    return { envReady, items: [] };
-  }
+  const envReady = Boolean(
+    process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  );
+  if (!envReady) return { envReady, items: [] };
 
   try {
     const { data, error } = await supabase
@@ -27,56 +87,47 @@ async function fetchQuestions(): Promise<{
       .eq("archived", false)
       .order("created_at", { ascending: false })
       .limit(8);
+
     if (error) throw error;
+
     return {
       envReady,
-      items: (data ?? []).map((row) => ({
-        id: row.id as string,
-        content: (row.content as string) ?? "",
-        created_at: row.created_at as string,
-      })),
+      items:
+        (data ?? []).map((row) => ({
+          id: String(row.id),
+          content: String(row.content ?? ""),
+          created_at: String(row.created_at),
+        })) ?? [],
     };
-  } catch (err) {
-    return {
-      envReady,
-      items: [],
-      error: err instanceof Error ? err.message : String(err),
-    };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return { envReady, items: [], error: msg };
   }
 }
 
-const MONTH_LINKS = ["2025/10", "2025/9", "2025/8", "2025/7", "2025/6"];
-const PERSON_POSITIONS = [
-  "-top-4 left-1/2 -translate-x-1/2",
-  "top-6 -left-6",
-  "top-6 -right-6",
-  "-bottom-4 left-6",
-  "-bottom-4 right-6",
-];
-
+/* =========================
+ * Page
+ * =======================*/
 export default async function Home() {
   const cookieStore = await cookies();
   const sessionCookie = cookieStore.get("qd_session")?.value;
   const session = parseSessionToken(sessionCookie);
-  const { envReady, items, error } = await fetchQuestions();
 
-  const placeholders = Array.from({ length: Math.max(8 - items.length, 0) });
-
-  const supabaseStatus = envReady ? (error ? "error" : "ok") : "missing";
-  const showDemoTokens =
-    process.env.ENABLE_DEMO_TOKENS === "true" ||
-    process.env.NEXT_PUBLIC_ENABLE_DEMO_TOKENS === "true" ||
-    process.env.NODE_ENV !== "production";
+  const { items, error } = await fetchQuestions();
+  const placeholdersCount = Math.max(8 - items.length, 0);
+    const showDemoTokens = process.env.ENABLE_DEMO_TOKENS === "true" || process.env.NEXT_PUBLIC_ENABLE_DEMO_TOKENS === "true";
 
   return (
     <div className="min-h-screen border-4 border-purple-400 bg-gradient-to-b from-white via-[#FFF7D6] to-white text-black relative overflow-hidden">
+      {/* Header（色・配置を維持） */}
       <header className="flex items-center justify-between px-6 py-5 border-b border-gray-200 backdrop-blur-sm bg-white/70">
         <span className="text-lg font-semibold tracking-wide">Questions Display</span>
         <div className="flex flex-wrap items-center gap-3 text-sm">
           <span className="rounded-full border border-black px-3 py-1 bg-white/90 shadow-sm">
             Role: {session?.role ?? "none"}
           </span>
-          {!session && showDemoTokens ? (
+
+          {!session && showDemoTokens && (
             <>
               <Link className="underline" href="/auth/qr?token=demo-viewer">
                 demo-viewer
@@ -88,7 +139,8 @@ export default async function Home() {
                 demo-admin
               </Link>
             </>
-          ) : null}
+          )}
+
           {session ? (
             <Link className="underline" href="/logout">
               logout
@@ -96,6 +148,7 @@ export default async function Home() {
           ) : !showDemoTokens ? (
             <span className="text-gray-500">QR でアクセスしてください</span>
           ) : null}
+
           <Link className="underline" href="/admin/review">
             review
           </Link>
@@ -105,6 +158,7 @@ export default async function Home() {
         </div>
       </header>
 
+      {/* Right month list（配置/色そのまま） */}
       <aside className="hidden md:flex flex-col gap-5 items-end text-right text-sm font-medium absolute top-28 right-6 text-gray-600">
         {MONTH_LINKS.map((label) => (
           <span key={label} className="hover:underline cursor-default">
@@ -114,109 +168,91 @@ export default async function Home() {
       </aside>
 
       <main className="flex flex-col items-center px-6 pb-24">
+        {/* Hero（配置・色は維持、「Q」をSVGに変更／人型なし） */}
         <section className="w-full max-w-5xl flex flex-col items-center gap-8 py-16 text-center">
           <div className="space-y-4">
-
-            <h1 className="text-4xl sm:text-5xl font-extrabold tracking-wide">
-              問いのディスプレイ
-            </h1>
+            <h1 className="text-4xl sm:text-5xl font-extrabold tracking-wide">問いのディスプレイ</h1>
             <p className="max-w-2xl mx-auto text-sm sm:text-base text-gray-600">
-              AI時代、問いを囲む人間同士の対話は私たちに何を気づかせる？
+              AI時代、問いを囲む対話から私たちは何に気づけるのか。
             </p>
           </div>
 
           <div className="relative flex items-center justify-center h-52 w-52 sm:h-64 sm:w-64">
-            <div className="flex h-40 w-40 sm:h-48 sm:w-48 items-center justify-center rounded-full bg-[#FAD55A] text-black border-4 border-black shadow-[0_12px_30px_rgba(250,213,90,0.45)]">
-              <span className="text-[90px] sm:text-[120px] font-extrabold leading-none">Q</span>
-            </div>
-            {PERSON_POSITIONS.map((pos) => (
-              <div
-                key={pos}
-                className={`absolute ${pos} flex flex-col items-center gap-1 text-[10px] sm:text-xs text-gray-700`}
-              >
-                <span className="flex items-center justify-center h-6 w-6 sm:h-7 sm:w-7 rounded-full bg-white border-2 border-black shadow-sm">
-                  💬
-                </span>
-                <span className="h-6 w-[2px] bg-black" />
-                <span className="h-2 w-3 rounded-t-full border-t-2 border-black" />
-              </div>
-            ))}
+            <QuestionLetter className="text-[108px] sm:text-[140px] font-extrabold tracking-tight" />
           </div>
+
 
           <Link
             href="/ask"
             className="px-12 py-3 bg-[#FAD55A] text-black font-semibold rounded-full shadow-md hover:shadow-lg hover:bg-[#f7c93a] transition"
           >
-            Reach out!
+            問いを投稿する
           </Link>
-
-          <div className="text-xs flex gap-3 text-gray-600">
-            <span className="inline-flex items-center gap-1 rounded-full border border-gray-300 px-3 py-1 bg-white/70">
-              <span className="font-semibold">ENV</span>
-              <span>{envReady ? "ok" : "missing"}</span>
-            </span>
-            <span className="inline-flex items-center gap-1 rounded-full border border-gray-300 px-3 py-1 bg-white/70">
-              <span className="font-semibold">Supabase</span>
-              <span>{supabaseStatus}</span>
-            </span>
-          </div>
 
           <div className="w-full max-w-3xl border-b border-dashed border-gray-400" />
         </section>
 
+        {/* Questions（UI据え置き） */}
         <section className="w-full max-w-5xl">
-          <h2 className="text-3xl font-bold text-center mb-10 tracking-wide">Questions</h2>
+          <h2 className="text-3xl font-bold text-center mb-10 tracking-wide">問い</h2>
+
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {items.map((item) => (
-              <article
-                key={item.id}
-                className="relative aspect-square rounded-[32px] border border-black/70 p-6 flex flex-col justify-between bg-white shadow-sm shadow-yellow-200/30"
-              >
-                <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-2xl">?</div>
-                <div className="text-sm leading-relaxed whitespace-pre-wrap break-words overflow-hidden">
-                  {item.content}
-                </div>
-                <span className="text-xs text-gray-500 self-end">
-                  {new Date(item.created_at).toLocaleDateString()}
-                </span>
-              </article>
+              <QuestionTile key={item.id} item={item} />
             ))}
-            {placeholders.map((_, idx) => (
-              <div
-                key={`placeholder-${idx}`}
-                className="relative aspect-square rounded-[32px] border border-black/30 flex items-center justify-center text-2xl text-gray-300 bg-white/60"
-              >
-                <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-2xl text-gray-400">?</span>
-              </div>
+            {Array.from({ length: placeholdersCount }).map((_, idx) => (
+              <PlaceholderTile key={idx} idx={idx} />
             ))}
           </div>
-          {error ? (
+
+          {error && (
             <p className="mt-6 text-sm text-center text-amber-700">
               Supabase の取得でエラーが発生しました: {error}
             </p>
-          ) : null}
+          )}
         </section>
 
+        {/* 制作の背景（文章ベースに簡潔化。色・配置は前と同等） */}
         <section className="w-full max-w-4xl mt-20 text-center space-y-6">
-          <h3 className="text-2xl sm:text-3xl font-bold tracking-wide">Why Q Exists</h3>
-          <p className="text-sm sm:text-base leading-relaxed text-gray-700">
-            ある日、教室のすみっこで出会った小さな「?」が、誰にも拾われないまま置き去りに
-            なっていました。<br className="hidden sm:block" />
-            それを拾い上げた仲間たちが「問いこそ次の創造を呼び込む火種だ」と信じ、
-            ひとりの声がみんなの対話につながる場所をつくろう──そんな想いで Q は生まれました。
+          <h3 className="text-2xl sm:text-3xl font-bold tracking-wide">制作の背景</h3>
+
+          <h4 className="text-lg sm:text-xl font-semibold">きっかけ</h4>
+          <p className="text-sm sm:text-base leading-relaxed text-gray-700 text-left">
+            首都圏で「問い」を掲げる場を訪れ、壁一面の問いから人々が自然に対話を始める光景を目の当たりにしました。
+            北欧の教育・研究者の方々との対話を通じて、分野横断・低ヒエラルキー・透明性を重んじる創造の姿勢に触れました。
+            さらに、学生が課題を自分ごととして捉え、主体的に行動する姿に強い刺激を受けました。
+            これらの体験を通じて、当サイトを「問い」を起点に対話と実験を重ねる場として立ち上げたいと考えるに至りました。
           </p>
-          <div className="grid sm:grid-cols-3 gap-6 text-left text-sm text-gray-600">
+
+          <h4 className="text-lg sm:text-xl font-semibold mt-4">コンセプト</h4>
+          <div className="grid sm:grid-cols-2 gap-6 text-left text-sm text-gray-700">
             <div className="rounded-2xl border border-black/20 bg-white/85 p-5 shadow-sm">
-              <h4 className="text-lg font-semibold mb-2 text-black">Spark</h4>
-              <p>思いついた瞬間の“なんでだろう？”を逃さず灯に変える。</p>
+              <p>
+                <span className="font-semibold">問いは場をつくる：</span>
+                掲げられた問いが、即興の対話と着想を生みます。
+              </p>
             </div>
             <div className="rounded-2xl border border-black/20 bg-white/85 p-5 shadow-sm">
-              <h4 className="text-lg font-semibold mb-2 text-black">Circle</h4>
-              <p>問いを囲んで語り合うことで、孤独な疑問が共同の冒険になる。</p>
+              <p>
+                <span className="font-semibold">主体性は問いから育つ：</span>
+                自分の言葉で問うことが、新しい挑戦を引き出します。
+              </p>
+            </div>
+          </div>
+
+          <h4 className="text-lg sm:text-xl font-semibold mt-4">このサイトでやること</h4>
+          <div className="grid sm:grid-cols-2 gap-6 text-left text-sm text-gray-700">
+            <div className="rounded-2xl border border-black/20 bg-white/85 p-5 shadow-sm">
+              <p>
+                <span className="font-semibold">問いを可視化：</span>
+                誰もが考え・語れる起点をつくります。
+              </p>
             </div>
             <div className="rounded-2xl border border-black/20 bg-white/85 p-5 shadow-sm">
-              <h4 className="text-lg font-semibold mb-2 text-black">Momentum</h4>
-              <p>集まった答えがまた次の問いを呼び、学びのサイクルが続いていく。</p>
+              <p>
+                <span className="font-semibold">不確実性を歓迎：</span>
+                偶然の出会い、対話から次の一歩を生みます。
+              </p>
             </div>
           </div>
         </section>
