@@ -4,7 +4,11 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 export const dynamic = 'force-dynamic';
 
-export default async function ReviewPage() {
+export default async function ReviewPage({
+  searchParams,
+}: {
+  searchParams?: Record<string, string | string[] | undefined>;
+}) {
   const cookieStore = await cookies();
   const token = cookieStore.get('qd_session')?.value;
   const session = parseSessionToken(token);
@@ -13,7 +17,7 @@ export default async function ReviewPage() {
   if (!role || (role !== 'moderator' && role !== 'admin')) {
     return (
       <div className="p-6">
-        <p>権限がありません（moderator/admin が必要です）。</p>
+        <p>権限がありません（moderator/admin が必要です）</p>
       </div>
     );
   }
@@ -21,20 +25,32 @@ export default async function ReviewPage() {
   let items: { id: string; question_id: string; reason: string; status: string; created_at: string }[] = [];
   let errorMsg: string | null = null;
   try {
-    const { data, error } = await supabaseAdmin
+    const stale = (typeof searchParams?.stale === 'string' ? searchParams?.stale : undefined) === '1';
+    const query = supabaseAdmin
       .from('pending_reviews')
       .select('id, question_id, reason, status, created_at')
-      .order('created_at', { ascending: false })
-      .limit(50);
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false });
+
+    if (stale) {
+      const threshold = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+      query.lt('created_at', threshold);
+    }
+
+    const { data, error } = await query.limit(50);
     if (error) throw error;
     items = (data ?? []) as { id: string; question_id: string; reason: string; status: string; created_at: string }[];
   } catch {
-    errorMsg = 'データ取得に失敗しました（admin設定未構成の可能性）。';
+    errorMsg = 'データ取得に失敗しました（admin設定未構成の可能性）';
   }
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
-      <h1 className="text-xl font-semibold mb-4">Pending Reviews</h1>
+      <h1 className="text-xl font-semibold mb-2">Pending Reviews</h1>
+      <div className="mb-4 text-sm flex gap-3">
+        <a className="underline" href="/admin/review">全件（pending 最新順）</a>
+        <a className="underline" href="/admin/review?stale=1">48h超のみ</a>
+      </div>
       {errorMsg ? (
         <p className="text-amber-600">{errorMsg}</p>
       ) : (
@@ -61,9 +77,10 @@ export default async function ReviewPage() {
               </div>
             </li>
           ))}
-          {items.length === 0 && <li className="text-sm">レビュー待ちなし</li>}
+          {items.length === 0 && <li className="text-sm">レビュー対象がありません</li>}
         </ul>
       )}
     </div>
   );
 }
+
