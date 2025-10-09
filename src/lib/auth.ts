@@ -25,7 +25,11 @@ function b64urlDecode(str: string) {
 }
 
 function getSecret() {
-  return process.env.SESSION_SECRET || '';
+  const secret = process.env.SESSION_SECRET || '';
+  if (process.env.NODE_ENV === 'production' && !secret) {
+    throw new Error('SESSION_SECRET is required in production');
+  }
+  return secret;
 }
 
 function sign(data: string, secret: string) {
