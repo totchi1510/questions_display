@@ -16,8 +16,9 @@ interface LogEntry {
 export default async function LogsPage({
   searchParams,
 }: {
-  searchParams?: Record<string, string | string[] | undefined>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  const params = (await searchParams) ?? {};
   const cookieStore = await cookies();
   const token = cookieStore.get('qd_session')?.value;
   const session = parseSessionToken(token);
@@ -31,9 +32,9 @@ export default async function LogsPage({
     );
   }
 
-  const action = typeof searchParams?.action === 'string' ? searchParams?.action : undefined;
-  const actorRole = typeof searchParams?.role === 'string' ? searchParams?.role : undefined;
-  const afterParam = typeof searchParams?.after === 'string' ? searchParams?.after : undefined;
+  const action = typeof params.action === 'string' ? params.action : undefined;
+  const actorRole = typeof params.role === 'string' ? params.role : undefined;
+  const afterParam = typeof params.after === 'string' ? params.after : undefined;
 
   let afterIso: string | undefined;
   if (afterParam) {
@@ -96,4 +97,3 @@ export default async function LogsPage({
     </div>
   );
 }
-

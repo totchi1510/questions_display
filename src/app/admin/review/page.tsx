@@ -21,8 +21,9 @@ interface QuestionSnapshot {
 export default async function ReviewPage({
   searchParams,
 }: {
-  searchParams?: Record<string, string | string[] | undefined>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  const params = (await searchParams) ?? {};
   const cookieStore = await cookies();
   const token = cookieStore.get('qd_session')?.value;
   const session = parseSessionToken(token);
@@ -41,7 +42,7 @@ export default async function ReviewPage({
   let errorMsg: string | null = null;
 
   try {
-    const stale = (typeof searchParams?.stale === 'string' ? searchParams?.stale : undefined) === '1';
+    const stale = (typeof params.stale === 'string' ? params.stale : undefined) === '1';
     const query = supabaseAdmin
       .from('pending_reviews')
       .select('id, question_id, reason, status, created_at')
@@ -154,4 +155,3 @@ export default async function ReviewPage({
     </div>
   );
 }
-
