@@ -1,8 +1,27 @@
 import 'server-only';
 import crypto from 'crypto';
 import { cookies } from 'next/headers';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 export const AUTHOR_COOKIE = 'qd_author';
+
+/**
+ * Returns the set of question ids posted by the current visitor's cookie token,
+ * filtered to ids the caller actually sees on the page. Empty when no token
+ * or no overlap.
+ */
+export async function fetchMyQuestionIds(visibleIds: string[]): Promise<Set<string>> {
+  if (visibleIds.length === 0) return new Set();
+  const token = await getAuthorToken();
+  if (!token) return new Set();
+  const { data, error } = await supabaseAdmin
+    .from('questions')
+    .select('id')
+    .eq('author_token', token)
+    .in('id', visibleIds);
+  if (error || !data) return new Set();
+  return new Set(data.map((r) => String(r.id)));
+}
 
 /**
  * Returns the current visitor's anonymous author token, or null if none yet.

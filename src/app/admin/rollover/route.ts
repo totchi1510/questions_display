@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
     const { startUtc, endUtc } = jstMonthRangeUtc(month);
     const { data: rows, error: selErr } = await supabaseAdmin
       .from('questions')
-      .select('id, content, created_at, likes_count, position_x, position_y')
+      .select('id, content, created_at, likes_count, position_x, position_y, width_px')
       .eq('published', true)
       .eq('archived', false)
       .gte('created_at', startUtc)
@@ -48,6 +48,7 @@ export async function POST(req: NextRequest) {
       likes_count: r.likes_count ?? 0,
       position_x: r.position_x ?? 50,
       position_y: r.position_y ?? 50,
+      width_px: r.width_px ?? 240,
     }));
 
     const { error: insErr } = await supabaseAdmin

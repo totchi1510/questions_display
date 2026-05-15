@@ -1,9 +1,16 @@
 import Link from 'next/link';
 import BigQ from '@/components/BigQ';
+import QuestionGraph from '@/components/QuestionGraph';
 import QuestionWall from '@/components/QuestionWall';
-import { fetchCurrentMonthQuestions, currentMonthLabelJST } from '@/lib/questions';
+import SettingsMenu from '@/components/SettingsMenu';
+import {
+  currentMonthLabelJST,
+  fetchCurrentMonthQuestions,
+  fetchQuestionLinks,
+} from '@/lib/questions';
 import { getStaffRole } from '@/lib/staff';
-import { getAuthorToken } from '@/lib/author';
+import { fetchMyQuestionIds, getAuthorToken } from '@/lib/author';
+import { fetchActiveTheme } from '@/lib/theme';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,40 +18,24 @@ export default async function Home() {
   const staff = await getStaffRole();
   const hasAuthor = Boolean(await getAuthorToken());
   const { items, error } = await fetchCurrentMonthQuestions(24);
+  const visibleIds = items.map((i) => i.id);
+  const [links, mySet, theme] = await Promise.all([
+    fetchQuestionLinks(visibleIds),
+    fetchMyQuestionIds(visibleIds),
+    fetchActiveTheme(),
+  ]);
+  const myIds = Array.from(mySet);
   const monthLabel = currentMonthLabelJST();
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white via-[#FFF7D6] to-white text-black">
       <header className="flex items-center justify-between px-6 py-5 border-b border-black/10 backdrop-blur-sm bg-white/70">
         <span className="text-sm font-semibold tracking-wider">Questions Display</span>
-        <div className="flex items-center gap-3 text-sm">
-          <span className="text-gray-500 hidden sm:inline">{monthLabel}</span>
-          {staff ? (
-            <>
-              <span className="rounded-full border border-black/40 px-3 py-1 bg-white/90 text-xs">
-                {staff.role}
-              </span>
-              <Link className="underline" href="/admin/review">
-                review
-              </Link>
-              <Link className="underline" href="/admin/logs">
-                logs
-              </Link>
-              <Link className="underline" href="/logout">
-                logout
-              </Link>
-            </>
-          ) : (
-            <Link className="underline text-gray-500" href="/login">
-              スタッフログイン
-            </Link>
-          )}
-          {hasAuthor && !staff && (
-            <Link className="underline text-gray-500" href="/me">
-              あなたの問い
-            </Link>
-          )}
-        </div>
+        <SettingsMenu
+          monthLabel={monthLabel}
+          hasAuthor={hasAuthor}
+          staff={staff ? { role: staff.role } : null}
+        />
       </header>
 
       <main className="px-6 pb-16">
@@ -54,10 +45,16 @@ export default async function Home() {
             <BigQ />
           </h1>
           <p className="text-sm sm:text-base text-gray-600 max-w-xl mx-auto leading-relaxed">
-            誰かの問いに、ふと立ち止まる。
+            誰かの問いにふと立ち止まる
             <br className="hidden sm:inline" />
-            通りすがりの対話から、考えが広がっていく。
+            考えが広がる
           </p>
+          {theme && (
+            <p className="mt-4 inline-flex items-center gap-2 rounded-full border border-black/15 bg-white/70 px-4 py-1 text-xs text-gray-700 tracking-wider">
+              <span className="text-gray-400">今月のテーマ</span>
+              <span className="font-semibold">{theme.label}</span>
+            </p>
+          )}
           <p className="mt-3 text-xs text-gray-400 tracking-widest">{monthLabel}</p>
           <Link
             href="/ask"
@@ -68,9 +65,34 @@ export default async function Home() {
         </section>
 
         <section className="max-w-6xl mx-auto">
-          <QuestionWall items={items} interactive />
+          {theme && (
+            <div className="mb-4 rounded-2xl border border-black/10 bg-white/60 px-5 py-3 text-center">
+              <p className="text-[11px] text-gray-500 tracking-[0.3em]">今月のテーマ</p>
+              <p className="mt-1 text-lg font-semibold">{theme.label}</p>
+              {theme.description && (
+                <p className="mt-1 text-sm text-gray-600 leading-relaxed">{theme.description}</p>
+              )}
+            </div>
+          )}
+          <QuestionWall items={items} links={links} interactive myIds={myIds} />
           <p className="mt-3 text-center text-xs text-gray-400">
-            ドラッグで移動 / ピンチ・スクロールで拡大縮小 / 付箋をタップで拡大表示
+            カーソルを合わせると関連が強調 / クリックで拡大表示 / ピンチで拡大縮小 / 自分の問い(黄色破線枠)はドラッグで動かせます
+          </p>
+          <p className="mt-1 text-center text-[11px] text-gray-400">
+            答えのない問いを味わってみてください。🤔 はそっと「考えている」を伝えるサインです。
+          </p>
+        </section>
+
+        <section className="max-w-6xl mx-auto mt-12">
+          <div className="text-center mb-3">
+            <p className="text-[11px] text-gray-500 tracking-[0.3em]">つながりを俯瞰する</p>
+            <h2 className="mt-1 text-lg font-semibold">問いのグラフ</h2>
+          </div>
+          <QuestionGraph items={items} links={links} myIds={myIds} height="min(60vh, 520px)" />
+          <p className="mt-2 text-center text-[11px] text-gray-400">
+            <Link href="/graph" className="underline">
+              全画面で見る
+            </Link>
           </p>
           {error && (
             <p className="mt-6 text-center text-sm text-amber-700">

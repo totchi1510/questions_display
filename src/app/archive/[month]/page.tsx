@@ -3,7 +3,12 @@ import { notFound } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import QuestionWall from '@/components/QuestionWall';
 import { isValidMonthKey, jstMonthDisplay, jstMonthRangeUtc } from '@/lib/month';
-import type { QuestionTile } from '@/lib/questions';
+import {
+  clampWidthPx,
+  DEFAULT_WIDTH_PX,
+  fetchQuestionLinks,
+  type QuestionTile,
+} from '@/lib/questions';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,7 +21,7 @@ async function fetchMonthArchive(monthKey: string): Promise<QuestionTile[]> {
   const { startUtc, endUtc } = jstMonthRangeUtc(monthKey);
   const { data, error } = await supabase
     .from('archive_questions')
-    .select('id, content, likes_count, created_at, position_x, position_y')
+    .select('id, content, likes_count, created_at, position_x, position_y, width_px')
     .gte('created_at', startUtc)
     .lt('created_at', endUtc)
     .order('likes_count', { ascending: false })
@@ -30,6 +35,7 @@ async function fetchMonthArchive(monthKey: string): Promise<QuestionTile[]> {
     hold_count: Number(row.likes_count ?? 0),
     position_x: Number(row.position_x ?? 50),
     position_y: Number(row.position_y ?? 50),
+    width_px: clampWidthPx(Number(row.width_px ?? DEFAULT_WIDTH_PX)),
   }));
 }
 
@@ -42,6 +48,7 @@ export default async function ArchiveMonth({
   if (!isValidMonthKey(month)) notFound();
 
   const items = await fetchMonthArchive(month);
+  const links = await fetchQuestionLinks(items.map((i) => i.id));
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white via-[#FFF7D6] to-white text-black px-6 py-12">
@@ -51,7 +58,7 @@ export default async function ArchiveMonth({
       </header>
 
       <main className="max-w-5xl mx-auto">
-        <QuestionWall items={items} interactive />
+        <QuestionWall items={items} links={links} interactive />
       </main>
 
       <footer className="max-w-5xl mx-auto mt-16 text-center space-x-6 text-sm">

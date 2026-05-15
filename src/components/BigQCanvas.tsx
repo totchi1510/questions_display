@@ -1,11 +1,13 @@
 'use client';
 
-import { Suspense, useRef, useState } from 'react';
-import { Canvas, useFrame, type ThreeEvent } from '@react-three/fiber';
+import { Suspense, useEffect, useRef } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
 import { Center, Text3D } from '@react-three/drei';
 import type * as THREE from 'three';
 
 const FONT = '/fonts/helvetiker_bold.typeface.json';
+// Radians of rotation per pixel of scroll/wheel input. ~360° per ~1000px.
+const SCROLL_FACTOR = 0.006;
 
 const text3dProps = {
   font: FONT,
@@ -20,53 +22,42 @@ const text3dProps = {
 
 function QMesh() {
   const groupRef = useRef<THREE.Group>(null);
-  const target = useRef(0);
-  const [hover, setHover] = useState(false);
+  const scrollYRef = useRef(typeof window !== 'undefined' ? window.scrollY : 0);
+  const wheelOffsetRef = useRef(0);
+
+  useEffect(() => {
+    function onScroll() {
+      // Page scroll position. Works while the page actually scrolls.
+      scrollYRef.current = window.scrollY + wheelOffsetRef.current;
+    }
+    function onWheel(e: WheelEvent) {
+      // Accumulate wheel deltas so the Q still spins on pages that don't
+      // overflow the viewport.
+      wheelOffsetRef.current += e.deltaY;
+      scrollYRef.current = window.scrollY + wheelOffsetRef.current;
+    }
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('wheel', onWheel, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('wheel', onWheel);
+    };
+  }, []);
 
   useFrame((_, dt) => {
     if (!groupRef.current) return;
+    const target = scrollYRef.current * SCROLL_FACTOR;
     const cur = groupRef.current.rotation.y;
-    const diff = target.current - cur;
-    if (Math.abs(diff) < 0.0005) {
-      groupRef.current.rotation.y = target.current;
-      return;
-    }
-    groupRef.current.rotation.y = cur + diff * Math.min(1, dt * 6);
+    groupRef.current.rotation.y = cur + (target - cur) * Math.min(1, dt * 10);
   });
 
-  function spin(e: ThreeEvent<PointerEvent>) {
-    e.stopPropagation();
-    target.current += Math.PI * 2;
-  }
-
   return (
-    <group
-      ref={groupRef}
-      onPointerDown={spin}
-      onPointerOver={(e) => {
-        e.stopPropagation();
-        setHover(true);
-        document.body.style.cursor = 'pointer';
-      }}
-      onPointerOut={() => {
-        setHover(false);
-        document.body.style.cursor = '';
-      }}
-    >
+    <group ref={groupRef}>
       <Center>
-        {/* Single yellow drop-shadow behind the main Q. */}
-        <Text3D {...text3dProps} position={[0.14, -0.14, -0.15]}>
-          Q
-          <meshStandardMaterial color="#FAD55A" roughness={0.5} />
-        </Text3D>
-        {/* Main black Q in front */}
         <Text3D {...text3dProps}>
           Q
-          <meshStandardMaterial
-            color={hover ? '#1a1a1a' : '#0a0a0a'}
-            metalness={0.2}
-            roughness={0.4}
-          />
+          <meshStandardMaterial color="#0a0a0a" metalness={0.2} roughness={0.45} />
         </Text3D>
       </Center>
     </group>
@@ -81,9 +72,9 @@ export default function BigQCanvas() {
       gl={{ antialias: true, alpha: true }}
       style={{ width: '100%', height: '100%' }}
     >
-      <ambientLight intensity={0.75} />
-      <directionalLight position={[4, 6, 5]} intensity={1.3} />
-      <directionalLight position={[-3, -2, 2]} intensity={0.4} color="#FAD55A" />
+      <ambientLight intensity={0.7} />
+      <directionalLight position={[4, 6, 5]} intensity={1.4} />
+      <directionalLight position={[-3, -2, 2]} intensity={0.35} />
       <Suspense fallback={null}>
         <QMesh />
       </Suspense>

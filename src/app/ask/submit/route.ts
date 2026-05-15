@@ -6,6 +6,7 @@ import { postSlackModeration } from '@/lib/slack';
 import { flagContent, jstDayRangeUtc } from '@/lib/moderation';
 import { hashIp } from '@/lib/ip';
 import { AUTHOR_COOKIE, authorCookieOptions, getOrInitAuthorToken } from '@/lib/author';
+import { clampWidthPx, DEFAULT_WIDTH_PX } from '@/lib/questions';
 
 function clampPercent(raw: FormDataEntryValue | null, fallback: number): number {
   const n = parseFloat((raw ?? '').toString());
@@ -13,11 +14,31 @@ function clampPercent(raw: FormDataEntryValue | null, fallback: number): number 
   return Math.max(0, Math.min(100, n));
 }
 
+function parseWidth(raw: FormDataEntryValue | null): number {
+  const n = parseFloat((raw ?? '').toString());
+  return clampWidthPx(Number.isFinite(n) ? n : DEFAULT_WIDTH_PX);
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const MAX_INSPIRATIONS = 3;
+
+function parseInspirations(raw: FormDataEntryValue | null): string[] {
+  if (!raw) return [];
+  const ids = raw
+    .toString()
+    .split(',')
+    .map((s) => s.trim())
+    .filter((s) => UUID_RE.test(s));
+  return Array.from(new Set(ids)).slice(0, MAX_INSPIRATIONS);
+}
+
 export async function POST(req: NextRequest) {
   const formData = await req.formData();
   const content = (formData.get('content') ?? '').toString().trim();
   const positionX = clampPercent(formData.get('position_x'), 50);
   const positionY = clampPercent(formData.get('position_y'), 50);
+  const widthPx = parseWidth(formData.get('width_px'));
+  const inspiredBy = parseInspirations(formData.get('inspired_by'));
 
   if (!content) {
     return NextResponse.redirect(new URL('/ask?error=empty', req.url));
@@ -59,6 +80,7 @@ export async function POST(req: NextRequest) {
         author_token: authorToken,
         position_x: positionX,
         position_y: positionY,
+        width_px: widthPx,
       })
       .select('id')
       .single();
@@ -72,11 +94,31 @@ export async function POST(req: NextRequest) {
       .insert({ question_id: qid, reason, status: 'pending' });
     if (perr) throw perr;
 
+    let linkInsertError: string | null = null;
+    if (inspiredBy.length > 0) {
+      const linkRows = inspiredBy.map((toId) => ({
+        from_question_id: qid,
+        to_question_id: toId,
+      }));
+      const { error: lerr } = await supabaseAdmin
+        .from('question_links')
+        .insert(linkRows);
+      if (lerr) {
+        console.error('question_links insert error', lerr);
+        linkInsertError = lerr.message;
+      }
+    }
+
     await supabaseAdmin.from('moderation_logs').insert({
       action: 'queue',
       actor_role: actorRole,
       question_id: qid,
-      details: { flags, user_id: actorUserId },
+      details: {
+        flags,
+        user_id: actorUserId,
+        inspired_by: inspiredBy,
+        link_insert_error: linkInsertError,
+      },
     });
 
     await postSlackModeration('Queued for moderation', {
