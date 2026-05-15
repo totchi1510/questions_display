@@ -89,11 +89,6 @@ export default async function Home() {
             <h2 className="mt-1 text-lg font-semibold">問いのグラフ</h2>
           </div>
           <QuestionGraph items={items} links={links} myIds={myIds} height="min(60vh, 520px)" />
-          <p className="mt-2 text-center text-[11px] text-gray-400">
-            <Link href="/graph" className="underline">
-              全画面で見る
-            </Link>
-          </p>
           {error && (
             <p className="mt-6 text-center text-sm text-amber-700">
               データ取得でエラーが発生しました: {error}
