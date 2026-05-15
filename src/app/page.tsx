@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import BigQ from '@/components/BigQ';
 import QuestionMasonry from '@/components/QuestionMasonry';
 import { fetchCurrentMonthQuestions, currentMonthLabelJST } from '@/lib/questions';
 import { getStaffRole } from '@/lib/staff';
@@ -40,8 +41,11 @@ export default async function Home() {
       </header>
 
       <main className="px-6 pb-16">
-        <section className="max-w-6xl mx-auto pt-16 pb-10 text-center">
-          <h1 className="text-4xl sm:text-5xl font-bold tracking-[0.4em] mb-4">問い</h1>
+        <section className="max-w-6xl mx-auto pt-12 pb-10 text-center">
+          <h1 className="mb-6 flex justify-center">
+            <span className="sr-only">問い</span>
+            <BigQ />
+          </h1>
           <p className="text-sm sm:text-base text-gray-600 max-w-xl mx-auto leading-relaxed">
             誰かの問いに、ふと立ち止まる。
             <br className="hidden sm:inline" />
