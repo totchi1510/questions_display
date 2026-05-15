@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import BigQ from '@/components/BigQ';
-import QuestionMasonry from '@/components/QuestionMasonry';
+import QuestionWall from '@/components/QuestionWall';
 import { fetchCurrentMonthQuestions, currentMonthLabelJST } from '@/lib/questions';
 import { getStaffRole } from '@/lib/staff';
 import { getAuthorToken } from '@/lib/author';
@@ -68,7 +68,10 @@ export default async function Home() {
         </section>
 
         <section className="max-w-6xl mx-auto">
-          <QuestionMasonry items={items} interactive gridClass="grid-cols-2 sm:grid-cols-3 lg:grid-cols-4" />
+          <QuestionWall items={items} interactive />
+          <p className="mt-3 text-center text-xs text-gray-400">
+            ドラッグで移動 / ピンチ・スクロールで拡大縮小 / 付箋をタップで拡大表示
+          </p>
           {error && (
             <p className="mt-6 text-center text-sm text-amber-700">
               データ取得でエラーが発生しました: {error}

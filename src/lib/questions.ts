@@ -5,6 +5,8 @@ export type QuestionTile = {
   content: string;
   created_at: string;
   hold_count: number;
+  position_x: number;
+  position_y: number;
 };
 
 function jstMonthStartUtc(d: Date = new Date()): string {
@@ -13,7 +15,7 @@ function jstMonthStartUtc(d: Date = new Date()): string {
   return new Date(startJstMs - 9 * 60 * 60 * 1000).toISOString();
 }
 
-export async function fetchCurrentMonthQuestions(limit = 18): Promise<{
+export async function fetchCurrentMonthQuestions(limit = 24): Promise<{
   envReady: boolean;
   items: QuestionTile[];
   error?: string;
@@ -27,7 +29,7 @@ export async function fetchCurrentMonthQuestions(limit = 18): Promise<{
   try {
     const { data, error } = await supabase
       .from('questions')
-      .select('id, content, created_at, published, archived, hold_count')
+      .select('id, content, created_at, published, archived, hold_count, position_x, position_y')
       .eq('published', true)
       .eq('archived', false)
       .gte('created_at', startUtc)
@@ -42,6 +44,8 @@ export async function fetchCurrentMonthQuestions(limit = 18): Promise<{
       content: String(row.content ?? ''),
       created_at: String(row.created_at),
       hold_count: Number(row.hold_count ?? 0),
+      position_x: Number(row.position_x ?? 50),
+      position_y: Number(row.position_y ?? 50),
     }));
     return { envReady, items };
   } catch (e) {

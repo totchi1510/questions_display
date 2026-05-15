@@ -7,9 +7,17 @@ import { flagContent, jstDayRangeUtc } from '@/lib/moderation';
 import { hashIp } from '@/lib/ip';
 import { AUTHOR_COOKIE, authorCookieOptions, getOrInitAuthorToken } from '@/lib/author';
 
+function clampPercent(raw: FormDataEntryValue | null, fallback: number): number {
+  const n = parseFloat((raw ?? '').toString());
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(0, Math.min(100, n));
+}
+
 export async function POST(req: NextRequest) {
   const formData = await req.formData();
   const content = (formData.get('content') ?? '').toString().trim();
+  const positionX = clampPercent(formData.get('position_x'), 50);
+  const positionY = clampPercent(formData.get('position_y'), 50);
 
   if (!content) {
     return NextResponse.redirect(new URL('/ask?error=empty', req.url));
@@ -49,6 +57,8 @@ export async function POST(req: NextRequest) {
         meta_ip_hash: ip ? hashIp(ip) : null,
         published: false,
         author_token: authorToken,
+        position_x: positionX,
+        position_y: positionY,
       })
       .select('id')
       .single();

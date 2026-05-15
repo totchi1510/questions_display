@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import QuestionMasonry from '@/components/QuestionMasonry';
+import QuestionWall from '@/components/QuestionWall';
 import { isValidMonthKey, jstMonthDisplay, jstMonthRangeUtc } from '@/lib/month';
 import type { QuestionTile } from '@/lib/questions';
 
@@ -16,7 +16,7 @@ async function fetchMonthArchive(monthKey: string): Promise<QuestionTile[]> {
   const { startUtc, endUtc } = jstMonthRangeUtc(monthKey);
   const { data, error } = await supabase
     .from('archive_questions')
-    .select('id, content, likes_count, created_at')
+    .select('id, content, likes_count, created_at, position_x, position_y')
     .gte('created_at', startUtc)
     .lt('created_at', endUtc)
     .order('likes_count', { ascending: false })
@@ -26,8 +26,10 @@ async function fetchMonthArchive(monthKey: string): Promise<QuestionTile[]> {
   return (data ?? []).map((row) => ({
     id: String(row.id),
     content: String(row.content ?? ''),
-    likes_count: Number(row.likes_count ?? 0),
     created_at: String(row.created_at),
+    hold_count: Number(row.likes_count ?? 0),
+    position_x: Number(row.position_x ?? 50),
+    position_y: Number(row.position_y ?? 50),
   }));
 }
 
@@ -49,7 +51,7 @@ export default async function ArchiveMonth({
       </header>
 
       <main className="max-w-5xl mx-auto">
-        <QuestionMasonry items={items} gridClass="grid-cols-2 sm:grid-cols-3 lg:grid-cols-4" />
+        <QuestionWall items={items} interactive />
       </main>
 
       <footer className="max-w-5xl mx-auto mt-16 text-center space-x-6 text-sm">

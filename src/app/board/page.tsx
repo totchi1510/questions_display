@@ -1,4 +1,4 @@
-import QuestionMasonry from '@/components/QuestionMasonry';
+import QuestionWall from '@/components/QuestionWall';
 import { fetchCurrentMonthQuestions, currentMonthLabelJST } from '@/lib/questions';
 
 export const dynamic = 'force-dynamic';
@@ -16,7 +16,7 @@ function qrImageSrc(target: string) {
 }
 
 export default async function BoardPage() {
-  const { items, error } = await fetchCurrentMonthQuestions(18);
+  const { items, error } = await fetchCurrentMonthQuestions(60);
   const monthLabel = currentMonthLabelJST();
   const askUrl = `${siteUrl()}/ask`;
 
@@ -31,7 +31,7 @@ export default async function BoardPage() {
       </header>
 
       <main className="px-10 pb-32">
-        <QuestionMasonry items={items} gridClass="grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6" />
+        <QuestionWall items={items} />
 
         {error && (
           <p className="mt-8 text-center text-sm text-amber-700">
