@@ -38,26 +38,31 @@
 - いいね dedup も IP ハッシュベース
 
 ### スタッフ（moderator / admin）
-- **Supabase Auth** + **マジックリンク**でログイン
+- **Supabase Auth** + **Google OAuth** でログイン
 - `staff_roles(user_id, role)` テーブルで auth ユーザー → role を紐付け
-- `/login` でメール入力 → マジックリンク受信 → クリック → `/auth/callback` → セッション cookie 発行
+- `/login` → "Google でログイン" → Google 同意画面 → `/auth/callback` → セッション cookie 発行
 - 以降は `lib/staff.ts` の `getStaffRole()` がスタッフかどうかを判定
 - `/admin/*` 系ルートは `getStaffRole()` でゲート
 
+### 必要な設定
+- **Google Cloud Console** → OAuth client ID（Web application）を作成
+  - Authorized redirect URI: `https://<project-ref>.supabase.co/auth/v1/callback`
+- **Supabase Dashboard → Authentication → Providers → Google** で Client ID / Secret を設定
+- **Authentication → Sign In / Up → "Allow new users to sign up" を OFF**（招待制）
+
 ### スタッフの追加（運用）
-1. Supabase Dashboard → Authentication → Users → "Invite a user" でメール招待（Disable signups 設定でも可能）
-2. 招待された人がメール内リンクから初回ログイン
-3. Dashboard → SQL Editor で:
+1. Supabase Dashboard → Authentication → Users → "Add user"（Auto Confirm にチェック）でメール登録
+2. SQL Editor で:
    ```sql
    insert into public.staff_roles (user_id, role)
    values ((select id from auth.users where email = 'new-staff@example.com'), 'moderator');
    ```
+3. 当該スタッフは `/login` から Google でログイン
 
 ### 初回 admin のブートストラップ
-最初の管理者だけはまだ `staff_roles` に誰も居ない状態から始めるので:
-1. Supabase Auth 設定で一時的に signups を有効化（または Dashboard から手動でユーザー作成）
-2. `/login` から自分のメールで magic link → ログイン
-3. SQL Editor で自分の user_id を `staff_roles` に admin として挿入
+1. Supabase Auth で一時的に signups を有効化
+2. `/login` から自分の Google アカウントでログイン（auth.users に行が作られる）
+3. SQL Editor で自分を `staff_roles` に admin として挿入
 4. Auth 設定を Disable signups に戻す
 
 ---
@@ -106,8 +111,8 @@
 | `/archive/[YYYY-MM]` | 指定月のアーカイブ | 🟡 未実装 |
 | `/admin/review` | モデレーション審査 | ✅ |
 | `/admin/logs` | 監査ログ | ✅ |
-| `/login` | マジックリンク送信フォーム | ✅ |
-| `/auth/callback` | マジックリンクの code → セッション交換 | ✅ |
+| `/login` | Google OAuth ログイン | ✅ |
+| `/auth/callback` | OAuth の code → セッション交換 | ✅ |
 | `/logout` | Supabase signOut + cookie クリア | ✅ |
 
 ---
@@ -225,7 +230,7 @@
 
 | 項目 | 状態 |
 |---|---|
-| Supabase Auth（マジックリンク）+ `staff_roles` | ✅ |
+| Supabase Auth（Google OAuth）+ `staff_roles` | ✅ |
 | DB スキーマ初期化 + RLS | ✅ |
 | `questions.published` カラム追加 | ✅ |
 | 投稿フロー（`/ask` + `/ask/submit`、匿名対応） | ✅ |
