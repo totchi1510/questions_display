@@ -53,8 +53,10 @@ export async function POST(req: NextRequest) {
   const { token: authorToken, isNew: isNewAuthor } = await getOrInitAuthorToken();
 
   try {
+    console.log('ask/submit step:start');
     const ip = (await headers()).get('x-forwarded-for')?.split(',')[0]?.trim() || '';
     const { startUtc, endUtc } = jstDayRangeUtc();
+    console.log('ask/submit step:after-headers', { hasIp: Boolean(ip) });
 
     if (ip) {
       const ipHash = hashIp(ip);
@@ -65,12 +67,14 @@ export async function POST(req: NextRequest) {
         .gte('created_at', startUtc)
         .lt('created_at', endUtc);
       if (countErr) throw countErr;
+      console.log('ask/submit step:after-ip-count', { ipCount });
       if ((ipCount ?? 0) >= 100) {
         await postSlackModeration('Rate limit: IP threshold', { ip: 'masked' });
         return NextResponse.redirect(new URL('/ask?error=rate', req.url));
       }
     }
 
+    console.log('ask/submit step:before-questions-insert');
     const { data: qres, error: qerr } = await supabaseAdmin
       .from('questions')
       .insert({
@@ -85,6 +89,7 @@ export async function POST(req: NextRequest) {
       .select('id')
       .single();
     if (qerr) throw qerr;
+    console.log('ask/submit step:after-questions-insert', { id: qres.id });
 
     const qid = qres.id as string;
     const reason = flags.length > 0 ? flags.join(',') : 'review_required';
@@ -93,6 +98,7 @@ export async function POST(req: NextRequest) {
       .from('pending_reviews')
       .insert({ question_id: qid, reason, status: 'pending' });
     if (perr) throw perr;
+    console.log('ask/submit step:after-pending-reviews-insert');
 
     let linkInsertError: string | null = null;
     if (inspiredBy.length > 0) {
@@ -109,6 +115,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    console.log('ask/submit step:before-mod-logs');
     await supabaseAdmin.from('moderation_logs').insert({
       action: 'queue',
       actor_role: actorRole,
@@ -120,12 +127,14 @@ export async function POST(req: NextRequest) {
         link_insert_error: linkInsertError,
       },
     });
+    console.log('ask/submit step:after-mod-logs');
 
     await postSlackModeration('Queued for moderation', {
       question_id: qid,
       role: actorRole,
       flags,
     });
+    console.log('ask/submit step:after-slack');
 
     const res = NextResponse.redirect(new URL('/ask?queued=1', req.url));
     if (isNewAuthor) {
@@ -133,21 +142,25 @@ export async function POST(req: NextRequest) {
     }
     return res;
   } catch (e) {
-    const detail =
-      e && typeof e === 'object'
-        ? {
-            message: (e as { message?: unknown }).message,
-            code: (e as { code?: unknown }).code,
-            details: (e as { details?: unknown }).details,
-            hint: (e as { hint?: unknown }).hint,
-            name: (e as { name?: unknown }).name,
-            stack:
-              typeof (e as { stack?: unknown }).stack === 'string'
-                ? ((e as { stack?: string }).stack ?? '').split('\n').slice(0, 5).join('\n')
-                : undefined,
-          }
-        : e;
-    console.error('ask submit POST error', detail);
+    console.error('ask submit POST error (raw):', e);
+    try {
+      const obj = e as Record<string, unknown> | null | undefined;
+      console.error(
+        'ask submit POST error (props):',
+        obj ? Object.getOwnPropertyNames(obj) : []
+      );
+      console.error(
+        'ask submit POST error (json):',
+        obj ? JSON.stringify(obj, Object.getOwnPropertyNames(obj)) : String(e)
+      );
+      console.error(
+        'ask submit POST error (typeof):',
+        typeof e,
+        e instanceof Error ? 'Error' : (e as object)?.constructor?.name
+      );
+    } catch (logErr) {
+      console.error('logging failed', logErr);
+    }
     return NextResponse.redirect(new URL('/ask?error=server', req.url));
   }
 }
