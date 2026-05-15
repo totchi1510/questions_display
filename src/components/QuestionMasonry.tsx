@@ -12,6 +12,24 @@ type Props = {
   gridClass?: string;
 };
 
+const PALETTE = ['#FFFFFF', '#FFFAEA', '#FBEFE3', '#EFF3E8'];
+
+function hashCode(str: string): number {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) {
+    h = (h * 31 + str.charCodeAt(i)) | 0;
+  }
+  return Math.abs(h);
+}
+
+function stickyStyle(id: string): { rotation: number; color: string } {
+  const h = hashCode(id);
+  return {
+    rotation: (h % 7) - 3, // deterministic -3°〜+3°
+    color: PALETTE[h % PALETTE.length],
+  };
+}
+
 function widthClass(content: string): string {
   return content.length > 32 ? 'col-span-1 sm:col-span-2' : 'col-span-1';
 }
@@ -29,24 +47,31 @@ export default function QuestionMasonry({
 
   return (
     <div
-      className={`grid ${gridClass} gap-8 items-start`}
+      className={`grid ${gridClass} gap-10 items-start`}
       style={{ gridAutoFlow: 'dense' }}
     >
-      {items.map((item) => (
-        <article
-          key={item.id}
-          className={`${widthClass(item.content)} rounded-[32px] border border-black/15 bg-white p-7 shadow-sm shadow-yellow-200/20`}
-        >
-          <div className="text-base leading-relaxed whitespace-pre-wrap break-words">
-            {item.content}
-          </div>
-          {interactive && (
-            <div className="mt-4 flex justify-end">
-              <HoldButton questionId={item.id} count={item.hold_count} />
+      {items.map((item) => {
+        const { rotation, color } = stickyStyle(item.id);
+        return (
+          <article
+            key={item.id}
+            className={`${widthClass(item.content)} rounded-[20px] border border-black/10 p-7 shadow-md shadow-black/10 motion-safe:transition-transform motion-safe:hover:scale-[1.03] motion-safe:hover:shadow-xl`}
+            style={{
+              transform: `rotate(${rotation}deg)`,
+              backgroundColor: color,
+            }}
+          >
+            <div className="text-base leading-relaxed whitespace-pre-wrap break-words">
+              {item.content}
             </div>
-          )}
-        </article>
-      ))}
+            {interactive && (
+              <div className="mt-4 flex justify-end">
+                <HoldButton questionId={item.id} count={item.hold_count} />
+              </div>
+            )}
+          </article>
+        );
+      })}
     </div>
   );
 }
