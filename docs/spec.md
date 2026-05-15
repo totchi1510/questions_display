@@ -129,10 +129,11 @@
 
 ### コンテンツ評価 ✅
 実装: `src/lib/moderation.ts`
-- 280 文字超 → `queue`
-- 禁止語 (`spam`, `abuse`) → `queue`
-- それ以外 → `publish`
-- 将来: AI / LLM ベースの `judge(content) -> { score, reasons }` 🔴
+- **全件レビュー必須**: 投稿は全て `published=false` で挿入 + `pending_reviews` にキュー
+- `flagContent()` はヒューリスティック（280 文字超 / 禁止語 `spam`/`abuse`）でフラグを付けるだけ
+- フラグはレビュー画面で「先に見るべき投稿」の目印として `pending_reviews.reason` に保存される
+- 掲示板表示は admin/moderator が `Approve` するまで起こらない
+- 将来: AI / LLM ベースの判定でフラグを増やす 🔴
 
 ### 通知 ✅
 - Slack Webhook（`SLACK_MODERATION_WEBHOOK_URL`）に publish / queue / 各レビュー結果を投稿

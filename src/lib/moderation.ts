@@ -1,11 +1,9 @@
 /**
- * Evaluate content and decide whether to publish immediately or queue for review.
- * Returns an action and reasons (for queue decisions).
+ * Inspect content and return heuristic flags. All posts go through review
+ * regardless of flags; flags are just hints surfaced to moderators on the
+ * pending_reviews row.
  */
-export function evaluateContent(content: string): {
-  action: 'publish' | 'queue';
-  reasons: string[];
-} {
+export function flagContent(content: string): string[] {
   const reasons: string[] = [];
   const lower = content.toLowerCase();
   const banned = ['spam', 'abuse'];
@@ -13,8 +11,7 @@ export function evaluateContent(content: string): {
   if (content.length > 280) reasons.push('len>280');
   if (banned.some((w) => lower.includes(w))) reasons.push('banned_word');
 
-  const action = reasons.length > 0 ? 'queue' : 'publish';
-  return { action, reasons };
+  return reasons;
 }
 
 /**
