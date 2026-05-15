@@ -12,12 +12,22 @@ export type Staff = {
 /**
  * Returns the current authenticated user's staff role, or null if the user
  * is unauthenticated or not in staff_roles.
+ *
+ * Resilient to auth errors (e.g. stale refresh tokens after a Supabase
+ * project reset): on any auth failure we just treat the visitor as
+ * anonymous rather than crashing the page.
  */
 export async function getStaffRole(): Promise<Staff | null> {
   const supabase = await getSupabaseServer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+
+  let user: { id: string; email?: string | null } | null = null;
+  try {
+    const { data, error } = await supabase.auth.getUser();
+    if (error) return null;
+    user = data.user;
+  } catch {
+    return null;
+  }
   if (!user) return null;
 
   const { data, error } = await supabase
