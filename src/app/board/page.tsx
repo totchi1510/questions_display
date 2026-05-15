@@ -31,7 +31,7 @@ export default async function BoardPage() {
       </header>
 
       <main className="px-10 pb-32">
-        <QuestionMasonry items={items} breakpoints={{ default: 5, 1280: 5, 1024: 4, 640: 3 }} />
+        <QuestionMasonry items={items} gridClass="grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6" />
 
         {error && (
           <p className="mt-8 text-center text-sm text-amber-700">

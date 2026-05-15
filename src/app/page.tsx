@@ -68,7 +68,7 @@ export default async function Home() {
         </section>
 
         <section className="max-w-6xl mx-auto">
-          <QuestionMasonry items={items} interactive breakpoints={{ default: 3, 1024: 3, 640: 2 }} />
+          <QuestionMasonry items={items} interactive gridClass="grid-cols-2 sm:grid-cols-3 lg:grid-cols-4" />
           {error && (
             <p className="mt-6 text-center text-sm text-amber-700">
               データ取得でエラーが発生しました: {error}

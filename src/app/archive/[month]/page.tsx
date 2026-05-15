@@ -49,7 +49,7 @@ export default async function ArchiveMonth({
       </header>
 
       <main className="max-w-5xl mx-auto">
-        <QuestionMasonry items={items} breakpoints={{ default: 3, 1024: 3, 640: 2 }} />
+        <QuestionMasonry items={items} gridClass="grid-cols-2 sm:grid-cols-3 lg:grid-cols-4" />
       </main>
 
       <footer className="max-w-5xl mx-auto mt-16 text-center space-x-6 text-sm">
