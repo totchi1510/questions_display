@@ -36,6 +36,11 @@ export default async function Home() {
               <Link className="underline" href="/admin/logs">
                 logs
               </Link>
+              {role === 'admin' && (
+                <Link className="underline" href="/admin/qr">
+                  qr
+                </Link>
+              )}
             </>
           )}
           {session && (

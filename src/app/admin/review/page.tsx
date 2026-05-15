@@ -80,13 +80,24 @@ export default async function ReviewPage({
   return (
     <div className="p-6 max-w-3xl mx-auto">
       <h1 className="text-xl font-semibold mb-2">Pending Reviews</h1>
-      <div className="mb-4 text-sm flex gap-3">
+      <div className="mb-4 text-sm flex gap-3 items-center">
         <a className="underline" href="/admin/review">
           全件（pending 最新順）
         </a>
         <a className="underline" href="/admin/review?stale=1">
           48h 超のみ
         </a>
+        {role === 'admin' && (
+          <form method="post" action="/admin/rollover" className="ml-auto">
+            <button
+              type="submit"
+              className="px-3 py-1 rounded bg-slate-700 text-white text-xs"
+              title="前月分を archive_questions にスナップショット"
+            >
+              前月をアーカイブに退避
+            </button>
+          </form>
+        )}
       </div>
       {errorMsg ? (
         <p className="text-amber-600">{errorMsg}</p>
