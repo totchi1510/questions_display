@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { parseSessionToken } from '@/lib/auth';
+import { getStaffRole } from '@/lib/staff';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { isValidMonthKey, jstMonthLabel, jstMonthRangeUtc, previousMonthKey } from '@/lib/month';
 import { postSlackModeration } from '@/lib/slack';
@@ -11,10 +10,8 @@ import { postSlackModeration } from '@/lib/slack';
  * Idempotent: skips rows whose id already exists in archive_questions.
  */
 export async function POST(req: NextRequest) {
-  const cookieStore = await cookies();
-  const session = parseSessionToken(cookieStore.get('qd_session')?.value);
-  const role = session?.role;
-  if (role !== 'admin') {
+  const staff = await getStaffRole();
+  if (staff?.role !== 'admin') {
     return new NextResponse('forbidden', { status: 403 });
   }
 
@@ -51,7 +48,6 @@ export async function POST(req: NextRequest) {
       likes_count: r.likes_count ?? 0,
     }));
 
-    // upsert by id (idempotent): if a row was already snapshotted, ignore the conflict
     const { error: insErr } = await supabaseAdmin
       .from('archive_questions')
       .upsert(snapshots, { onConflict: 'id', ignoreDuplicates: true });
@@ -59,8 +55,8 @@ export async function POST(req: NextRequest) {
 
     await supabaseAdmin.from('moderation_logs').insert({
       action: 'rollover',
-      actor_role: role,
-      details: { month, count: snapshots.length, jti: session?.jti },
+      actor_role: staff.role,
+      details: { month, count: snapshots.length, user_id: staff.userId, email: staff.email },
     });
     await postSlackModeration('Rollover: snapshot saved', { month, count: snapshots.length });
 

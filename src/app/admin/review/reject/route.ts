@@ -1,16 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { parseSessionToken } from '@/lib/auth';
+import { getStaffRole } from '@/lib/staff';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { postSlackModeration } from '@/lib/slack';
 
 export async function POST(req: NextRequest) {
-  const cookieStore = await cookies();
-  const token = cookieStore.get('qd_session')?.value;
-  const session = parseSessionToken(token);
-  const role = session?.role;
-  const jti = session?.jti;
-  if (!role || (role !== 'moderator' && role !== 'admin')) {
+  const staff = await getStaffRole();
+  if (!staff) {
     return new NextResponse('forbidden', { status: 403 });
   }
 
@@ -28,7 +23,6 @@ export async function POST(req: NextRequest) {
 
     const qid = pr.question_id as string;
 
-    // mark review and archive the question (soft)
     const { error: upErr } = await supabaseAdmin
       .from('pending_reviews')
       .update({ status: 'rejected', reviewed_at: new Date().toISOString() })
@@ -41,11 +35,17 @@ export async function POST(req: NextRequest) {
       .eq('id', qid);
     if (qErr) throw qErr;
 
-    await supabaseAdmin
-      .from('moderation_logs')
-      .insert({ action: 'reject', actor_role: role, question_id: qid, details: { pending_id: id, jti } });
-
-    await postSlackModeration('Rejected by moderator', { question_id: qid, pending_id: id, role });
+    await supabaseAdmin.from('moderation_logs').insert({
+      action: 'reject',
+      actor_role: staff.role,
+      question_id: qid,
+      details: { pending_id: id, user_id: staff.userId, email: staff.email },
+    });
+    await postSlackModeration('Rejected by moderator', {
+      question_id: qid,
+      pending_id: id,
+      role: staff.role,
+    });
     return NextResponse.redirect(new URL('/admin/review?ok=1', req.url));
   } catch (e) {
     await postSlackModeration('Reject failed', { error: (e as Error).message, id });

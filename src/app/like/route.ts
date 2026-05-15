@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies, headers } from 'next/headers';
-import { parseSessionToken } from '@/lib/auth';
+import { headers } from 'next/headers';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { hashIp } from '@/lib/ip';
 
@@ -18,22 +17,12 @@ export async function POST(req: NextRequest) {
   const qid = (form.get('question_id') ?? '').toString();
   if (!qid) return redirectBack(req);
 
-  const cookieStore = await cookies();
-  const session = parseSessionToken(cookieStore.get('qd_session')?.value);
-  const jti = session?.jti ?? null;
   const ip = (await headers()).get('x-forwarded-for')?.split(',')[0]?.trim() || '';
   const ipHash = ip ? hashIp(ip) : null;
 
   try {
-    // Dedup: by jti if present, else by ip_hash
-    if (jti) {
-      const { count } = await supabaseAdmin
-        .from('likes')
-        .select('id', { count: 'exact', head: true })
-        .eq('question_id', qid)
-        .eq('source_jti', jti);
-      if ((count ?? 0) > 0) return redirectBack(req, '?liked=dup');
-    } else if (ipHash) {
+    // IP-based dedup. Without an IP we skip dedup (local dev / proxy edge cases).
+    if (ipHash) {
       const { count } = await supabaseAdmin
         .from('likes')
         .select('id', { count: 'exact', head: true })
@@ -44,12 +33,11 @@ export async function POST(req: NextRequest) {
 
     const { error: likeErr } = await supabaseAdmin
       .from('likes')
-      .insert({ question_id: qid, source_jti: jti, source_ip_hash: ipHash });
+      .insert({ question_id: qid, source_jti: null, source_ip_hash: ipHash });
     if (likeErr) throw likeErr;
 
     const { error: rpcErr } = await supabaseAdmin.rpc('increment_question_likes', { qid });
     if (rpcErr) {
-      // Fallback: read-modify-write (race-prone but acceptable for MVP)
       const { data: q } = await supabaseAdmin
         .from('questions')
         .select('likes_count')

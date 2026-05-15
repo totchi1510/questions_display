@@ -1,5 +1,3 @@
-import type { SessionPayload } from '@/lib/auth';
-
 /**
  * Evaluate content and decide whether to publish immediately or queue for review.
  * Returns an action and reasons (for queue decisions).
@@ -32,9 +30,3 @@ export function jstDayRangeUtc() {
   const endUtc = new Date(startUtc.getTime() + 24 * 60 * 60 * 1000);
   return { startUtc: startUtc.toISOString(), endUtc: endUtc.toISOString() };
 }
-
-export interface ModerationContext {
-  role: SessionPayload['role'] | 'viewer';
-  jti: string | null;
-}
-

@@ -30,13 +30,35 @@
 
 ## 2. アクセスモデル ✅
 
-詳細: [access-flow.md](./access-flow.md)
+匿名 + スタッフ認証の 2 層構成:
 
-- QR トークン → サーバ検証 → セッション Cookie 発行
-- Cookie: `qd_session`（HMAC-SHA256 署名、`{role, exp, jti}`、TTL 7日、`httpOnly + secure + sameSite=Lax`）
-- ロール: `viewer` / `moderator` / `admin`
-- 開発時: `ENABLE_DEMO_TOKENS=true` でデモトークン (`demo-viewer` 等) を有効化 ✅
-- 本番: `qr_tokens` テーブル経由でハッシュ照合 🟡（テーブルは存在、検証ロジック未実装）
+### 匿名（通行人・投稿者）
+- 認証なし。`/`, `/board`, `/archive/*`, `/ask`, `/like` は誰でもアクセス可
+- `/ask/submit` 時に IP ハッシュベースでレート制限（100 件/日/IP、JST 基準）
+- いいね dedup も IP ハッシュベース
+
+### スタッフ（moderator / admin）
+- **Supabase Auth** + **マジックリンク**でログイン
+- `staff_roles(user_id, role)` テーブルで auth ユーザー → role を紐付け
+- `/login` でメール入力 → マジックリンク受信 → クリック → `/auth/callback` → セッション cookie 発行
+- 以降は `lib/staff.ts` の `getStaffRole()` がスタッフかどうかを判定
+- `/admin/*` 系ルートは `getStaffRole()` でゲート
+
+### スタッフの追加（運用）
+1. Supabase Dashboard → Authentication → Users → "Invite a user" でメール招待（Disable signups 設定でも可能）
+2. 招待された人がメール内リンクから初回ログイン
+3. Dashboard → SQL Editor で:
+   ```sql
+   insert into public.staff_roles (user_id, role)
+   values ((select id from auth.users where email = 'new-staff@example.com'), 'moderator');
+   ```
+
+### 初回 admin のブートストラップ
+最初の管理者だけはまだ `staff_roles` に誰も居ない状態から始めるので:
+1. Supabase Auth 設定で一時的に signups を有効化（または Dashboard から手動でユーザー作成）
+2. `/login` から自分のメールで magic link → ログイン
+3. SQL Editor で自分の user_id を `staff_roles` に admin として挿入
+4. Auth 設定を Disable signups に戻す
 
 ---
 
@@ -44,14 +66,17 @@
 
 詳細: [schema.md](./schema.md) / 実DDL: `supabase/migrations/20251008000000_init_schema.sql` ✅
 
-### 既存テーブル（全て ✅ DDL 適用済）
-- `questions` — 問い本体
-- `archive_questions` — 月次アーカイブ用
-- `likes` — いいね（UI 未実装 🟡）
+### テーブル一覧（全て ✅ DDL 適用済）
+- `questions` — 問い本体（`published` フラグあり）
+- `archive_questions` — 月次アーカイブのスナップショット
+- `likes` — いいね
 - `pending_reviews` — モデレーション待ち
-- `moderation_logs` — 監査ログ
-- `qr_tokens` — QR 本番化用（連携未実装 🟡）
-- `sessions` — 任意の監査強化用
+- `moderation_logs` — 監査ログ（`actor_role` は `'anon' | 'moderator' | 'admin'`）
+- `staff_roles` — Supabase Auth ユーザーと role の紐付け
+
+### 削除済み
+- `qr_tokens`（QR トークン体系を廃止）
+- `sessions`（カスタム cookie 廃止）
 
 ### 追加提案 🟡
 - `questions.published boolean not null default false`
@@ -81,9 +106,9 @@
 | `/archive/[YYYY-MM]` | 指定月のアーカイブ | 🟡 未実装 |
 | `/admin/review` | モデレーション審査 | ✅ |
 | `/admin/logs` | 監査ログ | ✅ |
-| `/admin/qr` | QR 発行 | 🟡 未実装 |
-| `/auth/qr` | QR トークン → Cookie | ✅（デモトークンのみ） |
-| `/logout` | Cookie クリア | ✅ |
+| `/login` | マジックリンク送信フォーム | ✅ |
+| `/auth/callback` | マジックリンクの code → セッション交換 | ✅ |
+| `/logout` | Supabase signOut + cookie クリア | ✅ |
 
 ---
 
@@ -92,8 +117,7 @@
 実装: `src/app/ask/submit/route.ts`
 
 ### レート制限 ✅
-詳細: [rate-limit.md](./rate-limit.md)
-- セッション（`jti`）: 50 件/日
+詳細: [rate-limit.md](./rate-limit.md)（注: jti ベースのセッション制限は廃止済み）
 - IP（ハッシュ化）: 100 件/日
 - JST 0:00 リセット
 - 超過時は `?error=rate` でリダイレクト + Slack 通知
@@ -201,15 +225,13 @@
 
 | 項目 | 状態 |
 |---|---|
-| QR → Cookie アクセスモデル（デモトークン） | ✅ |
-| QR → Cookie 本番化（`qr_tokens` DB 連携） | ✅ |
+| Supabase Auth（マジックリンク）+ `staff_roles` | ✅ |
 | DB スキーマ初期化 + RLS | ✅ |
 | `questions.published` カラム追加 | ✅ |
-| 投稿フロー（`/ask` + `/ask/submit`） | ✅ |
-| レート制限（セッション/IP） | ✅ |
+| 投稿フロー（`/ask` + `/ask/submit`、匿名対応） | ✅ |
+| レート制限（IP ベース） | ✅ |
 | モデレーション評価（ヒューリスティック） | ✅ |
 | 管理画面 `/admin/review` / `/admin/logs` | ✅ |
-| 管理画面 `/admin/qr` | ✅ |
 | Slack 通知 | ✅ |
 | `/board`（スクショ用ビュー） | ✅ |
 | いいね機能（UI + API） | ✅ |

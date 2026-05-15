@@ -1,16 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { parseSessionToken } from '@/lib/auth';
+import { getStaffRole } from '@/lib/staff';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { postSlackModeration } from '@/lib/slack';
 
 export async function POST(req: NextRequest) {
-  const cookieStore = await cookies();
-  const token = cookieStore.get('qd_session')?.value;
-  const session = parseSessionToken(token);
-  const role = session?.role;
-  const jti = session?.jti;
-  if (!role || (role !== 'moderator' && role !== 'admin')) {
+  const staff = await getStaffRole();
+  if (!staff) {
     return new NextResponse('forbidden', { status: 403 });
   }
 
@@ -38,10 +33,17 @@ export async function POST(req: NextRequest) {
       .eq('id', pr.question_id);
     if (qPubErr) throw qPubErr;
 
-    await supabaseAdmin
-      .from('moderation_logs')
-      .insert({ action: 'approve', actor_role: role, question_id: pr.question_id, details: { pending_id: id, jti } });
-    await postSlackModeration('Approved by moderator', { question_id: pr.question_id, pending_id: id, role });
+    await supabaseAdmin.from('moderation_logs').insert({
+      action: 'approve',
+      actor_role: staff.role,
+      question_id: pr.question_id,
+      details: { pending_id: id, user_id: staff.userId, email: staff.email },
+    });
+    await postSlackModeration('Approved by moderator', {
+      question_id: pr.question_id,
+      pending_id: id,
+      role: staff.role,
+    });
     return NextResponse.redirect(new URL('/admin/review?ok=1', req.url));
   } catch (e) {
     await postSlackModeration('Approve failed', { error: (e as Error).message, id });

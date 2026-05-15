@@ -1,16 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { parseSessionToken } from '@/lib/auth';
+import { getStaffRole } from '@/lib/staff';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { postSlackModeration } from '@/lib/slack';
 
 export async function POST(req: NextRequest) {
-  const cookieStore = await cookies();
-  const token = cookieStore.get('qd_session')?.value;
-  const session = parseSessionToken(token);
-  const role = session?.role;
-  const jti = session?.jti;
-  if (!role || (role !== 'moderator' && role !== 'admin')) {
+  const staff = await getStaffRole();
+  if (!staff) {
     return new NextResponse('forbidden', { status: 403 });
   }
 
@@ -25,15 +20,17 @@ export async function POST(req: NextRequest) {
       .eq('id', qid);
     if (upErr) throw upErr;
 
-    await supabaseAdmin
-      .from('moderation_logs')
-      .insert({ action: 'restore', actor_role: role, question_id: qid, details: { jti } });
+    await supabaseAdmin.from('moderation_logs').insert({
+      action: 'restore',
+      actor_role: staff.role,
+      question_id: qid,
+      details: { user_id: staff.userId, email: staff.email },
+    });
 
-    await postSlackModeration('Restored by moderator', { question_id: qid, role });
+    await postSlackModeration('Restored by moderator', { question_id: qid, role: staff.role });
     return NextResponse.redirect(new URL('/admin/review?ok=1', req.url));
   } catch (e) {
     await postSlackModeration('Restore failed', { error: (e as Error).message, question_id: qid });
     return NextResponse.redirect(new URL('/admin/review?error=server', req.url));
   }
 }
-

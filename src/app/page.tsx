@@ -1,23 +1,14 @@
 import Link from 'next/link';
-import { cookies } from 'next/headers';
-import { parseSessionToken } from '@/lib/auth';
 import QuestionMasonry from '@/components/QuestionMasonry';
 import { fetchCurrentMonthQuestions, currentMonthLabelJST } from '@/lib/questions';
+import { getStaffRole } from '@/lib/staff';
 
 export const dynamic = 'force-dynamic';
 
 export default async function Home() {
-  const cookieStore = await cookies();
-  const session = parseSessionToken(cookieStore.get('qd_session')?.value);
-  const role = session?.role ?? null;
-  const isStaff = role === 'moderator' || role === 'admin';
-
+  const staff = await getStaffRole();
   const { items, error } = await fetchCurrentMonthQuestions(24);
   const monthLabel = currentMonthLabelJST();
-
-  const showDemoTokens =
-    process.env.ENABLE_DEMO_TOKENS === 'true' ||
-    process.env.NEXT_PUBLIC_ENABLE_DEMO_TOKENS === 'true';
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white via-[#FFF7D6] to-white text-black">
@@ -25,10 +16,10 @@ export default async function Home() {
         <span className="text-sm font-semibold tracking-wider">Questions Display</span>
         <div className="flex items-center gap-3 text-sm">
           <span className="text-gray-500 hidden sm:inline">{monthLabel}</span>
-          {isStaff && (
+          {staff ? (
             <>
               <span className="rounded-full border border-black/40 px-3 py-1 bg-white/90 text-xs">
-                Role: {role}
+                {staff.role}
               </span>
               <Link className="underline" href="/admin/review">
                 review
@@ -36,30 +27,14 @@ export default async function Home() {
               <Link className="underline" href="/admin/logs">
                 logs
               </Link>
-              {role === 'admin' && (
-                <Link className="underline" href="/admin/qr">
-                  qr
-                </Link>
-              )}
+              <Link className="underline" href="/logout">
+                logout
+              </Link>
             </>
-          )}
-          {session && (
-            <Link className="underline" href="/logout">
-              logout
+          ) : (
+            <Link className="underline text-gray-500" href="/login">
+              スタッフログイン
             </Link>
-          )}
-          {!session && showDemoTokens && (
-            <>
-              <Link className="underline" href="/auth/qr?token=demo-viewer">
-                viewer
-              </Link>
-              <Link className="underline" href="/auth/qr?token=demo-moderator">
-                moderator
-              </Link>
-              <Link className="underline" href="/auth/qr?token=demo-admin">
-                admin
-              </Link>
-            </>
           )}
         </div>
       </header>

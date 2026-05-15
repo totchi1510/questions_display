@@ -1,5 +1,5 @@
-import { cookies } from 'next/headers';
-import { parseSessionToken } from '@/lib/auth';
+import { redirect } from 'next/navigation';
+import { getStaffRole } from '@/lib/staff';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 export const dynamic = 'force-dynamic';
@@ -24,17 +24,10 @@ export default async function ReviewPage({
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const params = (await searchParams) ?? {};
-  const cookieStore = await cookies();
-  const token = cookieStore.get('qd_session')?.value;
-  const session = parseSessionToken(token);
-  const role = session?.role;
+  const staff = await getStaffRole();
 
-  if (!role || (role !== 'moderator' && role !== 'admin')) {
-    return (
-      <div className="p-6">
-        <p>権限がありません（moderator / admin が必要です）</p>
-      </div>
-    );
+  if (!staff) {
+    redirect('/login');
   }
 
   let items: PendingItem[] = [];
@@ -87,7 +80,7 @@ export default async function ReviewPage({
         <a className="underline" href="/admin/review?stale=1">
           48h 超のみ
         </a>
-        {role === 'admin' && (
+        {staff.role === 'admin' && (
           <form method="post" action="/admin/rollover" className="ml-auto">
             <button
               type="submit"
