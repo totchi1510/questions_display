@@ -40,12 +40,17 @@ export default async function Home() {
       </header>
 
       <main className="px-6 pb-16">
-        <section className="max-w-6xl mx-auto pt-10 pb-8 text-center">
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-[0.4em] mb-2">問い</h1>
-          <p className="text-sm text-gray-500">{monthLabel}</p>
+        <section className="max-w-6xl mx-auto pt-16 pb-10 text-center">
+          <h1 className="text-4xl sm:text-5xl font-bold tracking-[0.4em] mb-4">問い</h1>
+          <p className="text-sm sm:text-base text-gray-600 max-w-xl mx-auto leading-relaxed">
+            誰かの問いに、ふと立ち止まる。
+            <br className="hidden sm:inline" />
+            通りすがりの対話から、考えが広がっていく。
+          </p>
+          <p className="mt-3 text-xs text-gray-400 tracking-widest">{monthLabel}</p>
           <Link
             href="/ask"
-            className="mt-6 inline-block px-10 py-3 bg-[#FAD55A] text-black font-semibold rounded-full shadow-sm hover:bg-[#f7c93a] transition"
+            className="mt-8 inline-block px-10 py-3 bg-[#FAD55A] text-black font-semibold rounded-full shadow-sm hover:bg-[#f7c93a] transition"
           >
             問いを投稿する
           </Link>
