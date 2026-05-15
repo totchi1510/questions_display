@@ -33,9 +33,16 @@
 匿名 + スタッフ認証の 2 層構成:
 
 ### 匿名（通行人・投稿者）
-- 認証なし。`/`, `/board`, `/archive/*`, `/ask`, `/like` は誰でもアクセス可
+- 認証なし。`/`, `/board`, `/archive/*`, `/ask`, `/react` は誰でもアクセス可
 - `/ask/submit` 時に IP ハッシュベースでレート制限（100 件/日/IP、JST 基準）
-- いいね dedup も IP ハッシュベース
+- リアクション dedup も IP ハッシュベース（タイプ単位）
+
+### 匿名投稿者トラッキング（cookie ベース）
+- 初回投稿時に `qd_author` cookie（httpOnly、ランダム UUID、1 年保持）を発行
+- 同一 cookie の投稿は `questions.author_token` に紐付けて記録
+- `/me` で自分の投稿一覧と各反応数を確認できる
+- 認証ではないので「漏れたら他人が見れる」だけ（書き込み権限などは付与しない）
+- cookie をクリアすればリセット
 
 ### スタッフ（moderator / admin）
 - **Supabase Auth** + **Google OAuth** でログイン

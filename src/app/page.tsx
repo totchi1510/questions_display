@@ -3,11 +3,13 @@ import BigQ from '@/components/BigQ';
 import QuestionMasonry from '@/components/QuestionMasonry';
 import { fetchCurrentMonthQuestions, currentMonthLabelJST } from '@/lib/questions';
 import { getStaffRole } from '@/lib/staff';
+import { getAuthorToken } from '@/lib/author';
 
 export const dynamic = 'force-dynamic';
 
 export default async function Home() {
   const staff = await getStaffRole();
+  const hasAuthor = Boolean(await getAuthorToken());
   const { items, error } = await fetchCurrentMonthQuestions(24);
   const monthLabel = currentMonthLabelJST();
 
@@ -35,6 +37,11 @@ export default async function Home() {
           ) : (
             <Link className="underline text-gray-500" href="/login">
               スタッフログイン
+            </Link>
+          )}
+          {hasAuthor && !staff && (
+            <Link className="underline text-gray-500" href="/me">
+              あなたの問い
             </Link>
           )}
         </div>

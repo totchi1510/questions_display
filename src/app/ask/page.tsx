@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { getAuthorToken } from '@/lib/author';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,14 +18,24 @@ export default async function AskPage({
   const queued = sp.queued === '1';
   const errorKey = typeof sp.error === 'string' ? sp.error : null;
   const errorMessage = errorKey ? ERROR_MESSAGES[errorKey] ?? null : null;
+  const hasAuthor = Boolean(await getAuthorToken());
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white via-[#FFF7D6] to-white text-black flex flex-col items-center px-6 py-12">
       <h1 className="text-3xl sm:text-4xl font-bold tracking-wide mb-10">問いを投稿</h1>
 
       {queued && (
-        <div className="w-full max-w-3xl mb-8 rounded-2xl border border-green-300 bg-green-50 p-5 text-sm text-green-900">
-          投稿を受け付けました。モデレータの確認後、掲示板に表示されます。
+        <div className="w-full max-w-3xl mb-8 rounded-2xl border border-green-300 bg-green-50 p-5 text-sm text-green-900 space-y-2">
+          <p>投稿を受け付けました。モデレータの確認後、掲示板に表示されます。</p>
+          {hasAuthor && (
+            <p>
+              これまでの問いと反応は{' '}
+              <Link href="/me" className="underline font-semibold">
+                あなたの問い
+              </Link>{' '}
+              で確認できます。
+            </p>
+          )}
         </div>
       )}
 

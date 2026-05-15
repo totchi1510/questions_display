@@ -5,6 +5,7 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { postSlackModeration } from '@/lib/slack';
 import { flagContent, jstDayRangeUtc } from '@/lib/moderation';
 import { hashIp } from '@/lib/ip';
+import { AUTHOR_COOKIE, authorCookieOptions, getOrInitAuthorToken } from '@/lib/author';
 
 export async function POST(req: NextRequest) {
   const formData = await req.formData();
@@ -19,6 +20,8 @@ export async function POST(req: NextRequest) {
   const staff = await getStaffRole();
   const actorRole = staff?.role ?? 'anon';
   const actorUserId = staff?.userId ?? null;
+
+  const { token: authorToken, isNew: isNewAuthor } = await getOrInitAuthorToken();
 
   try {
     const ip = (await headers()).get('x-forwarded-for')?.split(',')[0]?.trim() || '';
@@ -39,10 +42,14 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // All posts queue for review. published=false until a moderator approves.
     const { data: qres, error: qerr } = await supabaseAdmin
       .from('questions')
-      .insert({ content, meta_ip_hash: ip ? hashIp(ip) : null, published: false })
+      .insert({
+        content,
+        meta_ip_hash: ip ? hashIp(ip) : null,
+        published: false,
+        author_token: authorToken,
+      })
       .select('id')
       .single();
     if (qerr) throw qerr;
@@ -68,7 +75,11 @@ export async function POST(req: NextRequest) {
       flags,
     });
 
-    return NextResponse.redirect(new URL('/ask?queued=1', req.url));
+    const res = NextResponse.redirect(new URL('/ask?queued=1', req.url));
+    if (isNewAuthor) {
+      res.cookies.set(AUTHOR_COOKIE, authorToken, authorCookieOptions());
+    }
+    return res;
   } catch (e) {
     console.error('ask submit POST error', e);
     return NextResponse.redirect(new URL('/ask?error=server', req.url));
