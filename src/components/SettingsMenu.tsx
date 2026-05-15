@@ -89,9 +89,16 @@ export default function SettingsMenu({ monthLabel, hasAuthor, staff }: Props) {
                 <MenuLink href="/admin/themes" onClick={() => setOpen(false)}>
                   themes
                 </MenuLink>
-                <MenuLink href="/logout" onClick={() => setOpen(false)}>
+                {/* Plain <a> on purpose: avoid Next.js prefetching /logout,
+                    which would silently run signOut() on hover. */}
+                <a
+                  href="/logout"
+                  role="menuitem"
+                  onClick={() => setOpen(false)}
+                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-[#FFFAEA]"
+                >
                   logout
-                </MenuLink>
+                </a>
               </>
             )}
             {!staff && (
