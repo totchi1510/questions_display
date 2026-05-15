@@ -10,9 +10,7 @@ type MyQuestion = {
   created_at: string;
   published: boolean;
   archived: boolean;
-  think_count: number;
-  talk_count: number;
-  inspire_count: number;
+  hold_count: number;
 };
 
 function statusOf(q: Pick<MyQuestion, 'published' | 'archived'>): {
@@ -64,9 +62,7 @@ export default async function MyQuestionsPage() {
   try {
     const { data, error } = await supabaseAdmin
       .from('questions')
-      .select(
-        'id, content, created_at, published, archived, think_count, talk_count, inspire_count'
-      )
+      .select('id, content, created_at, published, archived, hold_count')
       .eq('author_token', token)
       .order('created_at', { ascending: false })
       .limit(100);
@@ -108,10 +104,11 @@ export default async function MyQuestionsPage() {
                   <p className="text-base leading-relaxed whitespace-pre-wrap break-words">
                     {q.content}
                   </p>
-                  <div className="mt-4 flex gap-4 text-sm text-gray-600">
-                    <span title="考えさせられた">💭 {q.think_count}</span>
-                    <span title="誰かと話した">🗣 {q.talk_count}</span>
-                    <span title="自分の問いの種">✨ {q.inspire_count}</span>
+                  <div className="mt-4 flex justify-end text-sm text-gray-600">
+                    <span title="この問いを考えている人">
+                      🤔 {q.hold_count}{' '}
+                      <span className="text-xs text-gray-500">人が考えています</span>
+                    </span>
                   </div>
                 </li>
               );

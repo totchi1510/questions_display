@@ -33,7 +33,7 @@
 匿名 + スタッフ認証の 2 層構成:
 
 ### 匿名（通行人・投稿者）
-- 認証なし。`/`, `/board`, `/archive/*`, `/ask`, `/react` は誰でもアクセス可
+- 認証なし。`/`, `/board`, `/archive/*`, `/ask`, `/hold` は誰でもアクセス可
 - `/ask/submit` 時に IP ハッシュベースでレート制限（100 件/日/IP、JST 基準）
 - リアクション dedup も IP ハッシュベース（タイプ単位）
 
@@ -79,17 +79,18 @@
 詳細: [schema.md](./schema.md) / 実DDL: `supabase/migrations/20251008000000_init_schema.sql` ✅
 
 ### テーブル一覧（全て ✅ DDL 適用済）
-- `questions` — 問い本体（`published`、`think_count` / `talk_count` / `inspire_count`、生成列 `total_reactions`）
+- `questions` — 問い本体（`published`、`hold_count`、`author_token`）
 - `archive_questions` — 月次アーカイブのスナップショット
-- `likes` — リアクション（`reaction_type in ('think','talk','inspire')`）
+- `likes` — 「考えている」リアクション（タイプ無し、1 質問 × 1 IP）
 - `pending_reviews` — モデレーション待ち
 - `moderation_logs` — 監査ログ（`actor_role` は `'anon' | 'moderator' | 'admin'`）
 - `staff_roles` — Supabase Auth ユーザーと role の紐付け
 
 ### リアクションモデル
-- 「考えさせられた」「誰かと話した」「自分の問いの種」の 3 軸
-- 各タイプは IP ハッシュ単位で 1 質問につき 1 回（同じ IP でも違うタイプは別カウント）
-- 並びは `total_reactions desc, created_at desc`
+- **🤔 「考えている」** の 1 軸（旧 3 軸モデルから統合、過去データは合計値として `hold_count` に集約済み）
+- IP ハッシュ単位で 1 質問につき 1 回
+- 並びは `hold_count desc, created_at desc`
+- `/me` で「N 人が考えています」として投稿者にフィードバック
 
 ### 削除済み
 - `qr_tokens`（QR トークン体系を廃止）
