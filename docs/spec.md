@@ -72,12 +72,17 @@
 詳細: [schema.md](./schema.md) / 実DDL: `supabase/migrations/20251008000000_init_schema.sql` ✅
 
 ### テーブル一覧（全て ✅ DDL 適用済）
-- `questions` — 問い本体（`published` フラグあり）
+- `questions` — 問い本体（`published`、`think_count` / `talk_count` / `inspire_count`、生成列 `total_reactions`）
 - `archive_questions` — 月次アーカイブのスナップショット
-- `likes` — いいね
+- `likes` — リアクション（`reaction_type in ('think','talk','inspire')`）
 - `pending_reviews` — モデレーション待ち
 - `moderation_logs` — 監査ログ（`actor_role` は `'anon' | 'moderator' | 'admin'`）
 - `staff_roles` — Supabase Auth ユーザーと role の紐付け
+
+### リアクションモデル
+- 「考えさせられた」「誰かと話した」「自分の問いの種」の 3 軸
+- 各タイプは IP ハッシュ単位で 1 質問につき 1 回（同じ IP でも違うタイプは別カウント）
+- 並びは `total_reactions desc, created_at desc`
 
 ### 削除済み
 - `qr_tokens`（QR トークン体系を廃止）

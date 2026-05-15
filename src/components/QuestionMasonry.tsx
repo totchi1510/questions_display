@@ -1,4 +1,4 @@
-import LikeButton from './LikeButton';
+import ReactionBar from './ReactionBar';
 import type { QuestionTile } from '@/lib/questions';
 
 type Props = {
@@ -46,7 +46,14 @@ export default function QuestionMasonry({
           </div>
           {interactive && (
             <div className="mt-3 flex justify-end">
-              <LikeButton questionId={item.id} count={item.likes_count} />
+              <ReactionBar
+                questionId={item.id}
+                counts={{
+                  think: item.think_count,
+                  talk: item.talk_count,
+                  inspire: item.inspire_count,
+                }}
+              />
             </div>
           )}
         </article>

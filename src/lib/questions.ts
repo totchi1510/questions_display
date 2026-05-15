@@ -3,8 +3,10 @@ import { supabase } from '@/lib/supabase';
 export type QuestionTile = {
   id: string;
   content: string;
-  likes_count: number;
   created_at: string;
+  think_count: number;
+  talk_count: number;
+  inspire_count: number;
 };
 
 function jstMonthStartUtc(d: Date = new Date()): string {
@@ -27,11 +29,13 @@ export async function fetchCurrentMonthQuestions(limit = 18): Promise<{
   try {
     const { data, error } = await supabase
       .from('questions')
-      .select('id, content, likes_count, created_at, published, archived')
+      .select(
+        'id, content, created_at, published, archived, think_count, talk_count, inspire_count, total_reactions'
+      )
       .eq('published', true)
       .eq('archived', false)
       .gte('created_at', startUtc)
-      .order('likes_count', { ascending: false })
+      .order('total_reactions', { ascending: false })
       .order('created_at', { ascending: false })
       .limit(limit);
 
@@ -40,8 +44,10 @@ export async function fetchCurrentMonthQuestions(limit = 18): Promise<{
     const items: QuestionTile[] = (data ?? []).map((row) => ({
       id: String(row.id),
       content: String(row.content ?? ''),
-      likes_count: Number(row.likes_count ?? 0),
       created_at: String(row.created_at),
+      think_count: Number(row.think_count ?? 0),
+      talk_count: Number(row.talk_count ?? 0),
+      inspire_count: Number(row.inspire_count ?? 0),
     }));
     return { envReady, items };
   } catch (e) {
