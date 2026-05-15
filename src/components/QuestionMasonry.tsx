@@ -4,13 +4,24 @@ import type { QuestionTile } from '@/lib/questions';
 type Props = {
   items: QuestionTile[];
   interactive?: boolean;
-  columnsClass?: string;
+  /**
+   * Tailwind grid-cols utilities, e.g. "grid-cols-2 sm:grid-cols-4 lg:grid-cols-6".
+   * Must allow up to 3 column spans at sm+ for the longest tiles.
+   */
+  gridClass?: string;
 };
+
+function widthSpan(content: string): string {
+  const len = content.length;
+  if (len <= 25) return 'col-span-1';
+  if (len <= 70) return 'col-span-1 sm:col-span-2';
+  return 'col-span-2 sm:col-span-3';
+}
 
 export default function QuestionMasonry({
   items,
   interactive = false,
-  columnsClass = 'columns-2 sm:columns-3 lg:columns-4',
+  gridClass = 'grid-cols-2 sm:grid-cols-4 lg:grid-cols-6',
 }: Props) {
   if (items.length === 0) {
     return (
@@ -21,11 +32,14 @@ export default function QuestionMasonry({
   }
 
   return (
-    <div className={`${columnsClass} gap-6`}>
+    <div
+      className={`grid ${gridClass} gap-6 items-start`}
+      style={{ gridAutoFlow: 'dense' }}
+    >
       {items.map((item) => (
         <article
           key={item.id}
-          className="break-inside-avoid mb-6 rounded-[32px] border border-black/30 bg-white p-6 shadow-sm shadow-yellow-200/30"
+          className={`${widthSpan(item.content)} rounded-[32px] border border-black/30 bg-white p-6 shadow-sm shadow-yellow-200/30`}
         >
           <div className="text-base leading-relaxed whitespace-pre-wrap break-words">
             {item.content}
