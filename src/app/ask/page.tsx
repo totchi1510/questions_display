@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic";
 
 export default function AskPage() {
   return (
-    <div className="min-h-screen border-4 border-purple-400 bg-white text-black flex flex-col items-center px-6 py-12">
+    <div className="min-h-screen bg-gradient-to-b from-white via-[#FFF7D6] to-white text-black flex flex-col items-center px-6 py-12">
       <h1 className="text-3xl sm:text-4xl font-bold tracking-wide mb-10">問いを投稿</h1>
       <form
         method="post"

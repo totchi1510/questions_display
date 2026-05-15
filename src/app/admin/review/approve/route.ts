@@ -32,6 +32,12 @@ export async function POST(req: NextRequest) {
       .eq('id', id);
     if (upErr) throw upErr;
 
+    const { error: qPubErr } = await supabaseAdmin
+      .from('questions')
+      .update({ published: true })
+      .eq('id', pr.question_id);
+    if (qPubErr) throw qPubErr;
+
     await supabaseAdmin
       .from('moderation_logs')
       .insert({ action: 'approve', actor_role: role, question_id: pr.question_id, details: { pending_id: id, jti } });

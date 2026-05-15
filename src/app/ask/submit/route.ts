@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
       // insert a pending review and log
       const { data: qres, error: qerr } = await supabaseAdmin
         .from('questions')
-        .insert({ content, meta_ip_hash: ip ? hashIp(ip) : null })
+        .insert({ content, meta_ip_hash: ip ? hashIp(ip) : null, published: false })
         .select('id')
         .single();
       if (qerr) throw qerr;
@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
     // direct publish to questions
     const { error } = await supabaseAdmin
       .from('questions')
-      .insert({ content, meta_ip_hash: ip ? hashIp(ip) : null });
+      .insert({ content, meta_ip_hash: ip ? hashIp(ip) : null, published: true });
     if (error) throw error;
 
     await supabaseAdmin

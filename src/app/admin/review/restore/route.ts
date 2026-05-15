@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
   try {
     const { error: upErr } = await supabaseAdmin
       .from('questions')
-      .update({ archived: false, archived_at: null })
+      .update({ archived: false, archived_at: null, published: true })
       .eq('id', qid);
     if (upErr) throw upErr;
 
