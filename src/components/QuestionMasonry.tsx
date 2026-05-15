@@ -61,7 +61,7 @@ export default function QuestionMasonry({
               backgroundColor: color,
             }}
           >
-            <div className="text-base leading-relaxed whitespace-pre-wrap break-words">
+            <div className="text-base leading-relaxed whitespace-pre-wrap [word-break:auto-phrase] [line-break:strict]">
               {item.content}
             </div>
             {interactive && (
