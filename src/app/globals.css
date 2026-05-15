@@ -24,3 +24,17 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Masonry layout (react-masonry-css). Gutter width controlled by --masonry-gap. */
+.masonry-grid {
+  display: flex;
+  margin-left: calc(var(--masonry-gap, 1.5rem) * -1);
+  width: auto;
+}
+.masonry-column {
+  padding-left: var(--masonry-gap, 1.5rem);
+  background-clip: padding-box;
+}
+.masonry-column > * {
+  margin-bottom: var(--masonry-gap, 1.5rem);
+}

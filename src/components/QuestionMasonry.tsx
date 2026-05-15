@@ -1,45 +1,51 @@
+'use client';
+
+import Masonry from 'react-masonry-css';
 import HoldButton from './HoldButton';
 import type { QuestionTile } from '@/lib/questions';
+
+type Breakpoints = {
+  default: number;
+  [width: number]: number;
+};
 
 type Props = {
   items: QuestionTile[];
   interactive?: boolean;
   /**
-   * Tailwind grid-cols utilities, e.g. "grid-cols-2 sm:grid-cols-4 lg:grid-cols-6".
-   * Must allow up to 3 column spans at sm+ for the longest tiles.
+   * Breakpoint columns map for react-masonry-css.
+   * Keys are min viewport widths; "default" is the widest fallback.
    */
-  gridClass?: string;
+  breakpoints?: Breakpoints;
 };
 
-function widthSpan(content: string): string {
-  const len = content.length;
-  if (len <= 25) return 'col-span-1';
-  if (len <= 70) return 'col-span-1 sm:col-span-2';
-  return 'col-span-2 sm:col-span-3';
-}
+const DEFAULT_BREAKPOINTS: Breakpoints = {
+  default: 4,
+  1024: 3,
+  640: 2,
+};
 
 export default function QuestionMasonry({
   items,
   interactive = false,
-  gridClass = 'grid-cols-2 sm:grid-cols-4 lg:grid-cols-6',
+  breakpoints = DEFAULT_BREAKPOINTS,
 }: Props) {
   if (items.length === 0) {
     return (
-      <div className="text-center text-gray-400 py-12">
-        まだ問いがありません
-      </div>
+      <div className="text-center text-gray-400 py-12">まだ問いがありません</div>
     );
   }
 
   return (
-    <div
-      className={`grid ${gridClass} gap-6 items-start`}
-      style={{ gridAutoFlow: 'dense' }}
+    <Masonry
+      breakpointCols={breakpoints}
+      className="masonry-grid"
+      columnClassName="masonry-column"
     >
       {items.map((item) => (
         <article
           key={item.id}
-          className={`${widthSpan(item.content)} rounded-[32px] border border-black/30 bg-white p-6 shadow-sm shadow-yellow-200/30`}
+          className="rounded-[32px] border border-black/30 bg-white p-6 shadow-sm shadow-yellow-200/30"
         >
           <div className="text-base leading-relaxed whitespace-pre-wrap break-words">
             {item.content}
@@ -51,6 +57,6 @@ export default function QuestionMasonry({
           )}
         </article>
       ))}
-    </div>
+    </Masonry>
   );
 }
