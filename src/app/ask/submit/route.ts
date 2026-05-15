@@ -133,7 +133,21 @@ export async function POST(req: NextRequest) {
     }
     return res;
   } catch (e) {
-    console.error('ask submit POST error', e);
+    const detail =
+      e && typeof e === 'object'
+        ? {
+            message: (e as { message?: unknown }).message,
+            code: (e as { code?: unknown }).code,
+            details: (e as { details?: unknown }).details,
+            hint: (e as { hint?: unknown }).hint,
+            name: (e as { name?: unknown }).name,
+            stack:
+              typeof (e as { stack?: unknown }).stack === 'string'
+                ? ((e as { stack?: string }).stack ?? '').split('\n').slice(0, 5).join('\n')
+                : undefined,
+          }
+        : e;
+    console.error('ask submit POST error', detail);
     return NextResponse.redirect(new URL('/ask?error=server', req.url));
   }
 }
