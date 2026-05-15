@@ -59,18 +59,24 @@ export async function POST(req: NextRequest) {
     console.log('ask/submit step:after-headers', { hasIp: Boolean(ip) });
 
     if (ip) {
-      const ipHash = hashIp(ip);
-      const { count: ipCount, error: countErr } = await supabaseAdmin
-        .from('questions')
-        .select('id', { count: 'exact', head: true })
-        .eq('meta_ip_hash', ipHash)
-        .gte('created_at', startUtc)
-        .lt('created_at', endUtc);
-      if (countErr) throw countErr;
-      console.log('ask/submit step:after-ip-count', { ipCount });
-      if ((ipCount ?? 0) >= 100) {
-        await postSlackModeration('Rate limit: IP threshold', { ip: 'masked' });
-        return NextResponse.redirect(new URL('/ask?error=rate', req.url));
+      try {
+        const ipHash = hashIp(ip);
+        const { count: ipCount, error: countErr } = await supabaseAdmin
+          .from('questions')
+          .select('id', { count: 'exact', head: true })
+          .eq('meta_ip_hash', ipHash)
+          .gte('created_at', startUtc)
+          .lt('created_at', endUtc);
+        if (countErr) throw countErr;
+        console.log('ask/submit step:after-ip-count', { ipCount });
+        if ((ipCount ?? 0) >= 100) {
+          await postSlackModeration('Rate limit: IP threshold', { ip: 'masked' });
+          return NextResponse.redirect(new URL('/ask?error=rate', req.url));
+        }
+      } catch (rateErr) {
+        // Rate-limit is best-effort anti-abuse. Failing it shouldn't block
+        // legit posts — log and continue.
+        console.warn('ask/submit ip rate-limit skipped:', rateErr);
       }
     }
 
