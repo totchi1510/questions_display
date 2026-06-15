@@ -17,7 +17,8 @@ function siteUrl() {
 
 function qrImageSrc(target: string) {
   const encoded = encodeURIComponent(target);
-  return `https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=0&data=${encoded}`;
+  // Request a high-res rendering so the QR stays crisp when scaled up.
+  return `https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=0&data=${encoded}`;
 }
 
 export default async function BoardPage() {
@@ -58,18 +59,20 @@ export default async function BoardPage() {
         )}
       </main>
 
-      <aside className="absolute bottom-8 right-10 flex flex-col items-center gap-2">
-        <div className="rounded-2xl bg-white p-2 shadow-md shadow-black/5">
+      <aside className="absolute bottom-8 right-10 flex flex-col items-center gap-3">
+        <div className="rounded-2xl bg-white p-3 shadow-md shadow-black/10 border border-black/5">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={qrImageSrc(askUrl)}
             alt="問いを投稿する QR コード"
-            width={120}
-            height={120}
+            width={200}
+            height={200}
             className="block"
           />
         </div>
-        <span className="text-xs text-gray-600 tracking-wider">問いを投稿する</span>
+        <span className="text-sm font-semibold text-gray-700 tracking-wider">
+          問いを投稿する
+        </span>
       </aside>
     </div>
   );
