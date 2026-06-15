@@ -79,7 +79,7 @@ export default async function AskPage({
           </ul>
         </div>
 
-        <AskCanvas existing={items} />
+        <AskCanvas existing={items} themeLabel={theme?.label ?? null} />
         <div className="mt-8 text-center">
           <Link className="underline text-gray-500 text-sm" href="/">
             一覧に戻る

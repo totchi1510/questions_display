@@ -21,7 +21,7 @@ async function fetchMonthArchive(monthKey: string): Promise<QuestionTile[]> {
   const { startUtc, endUtc } = jstMonthRangeUtc(monthKey);
   const { data, error } = await supabase
     .from('archive_questions')
-    .select('id, content, likes_count, created_at, position_x, position_y, width_px')
+    .select('id, content, likes_count, created_at, position_x, position_y, width_px, theme_id')
     .gte('created_at', startUtc)
     .lt('created_at', endUtc)
     .order('likes_count', { ascending: false })
@@ -36,6 +36,7 @@ async function fetchMonthArchive(monthKey: string): Promise<QuestionTile[]> {
     position_x: Number(row.position_x ?? 50),
     position_y: Number(row.position_y ?? 50),
     width_px: clampWidthPx(Number(row.width_px ?? DEFAULT_WIDTH_PX)),
+    theme_id: row.theme_id ? String(row.theme_id) : null,
   }));
 }
 

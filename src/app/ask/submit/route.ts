@@ -7,6 +7,7 @@ import { flagContent, jstDayRangeUtc } from '@/lib/moderation';
 import { hashIp } from '@/lib/ip';
 import { AUTHOR_COOKIE, authorCookieOptions, getOrInitAuthorToken } from '@/lib/author';
 import { clampWidthPx, DEFAULT_WIDTH_PX } from '@/lib/questions';
+import { fetchActiveTheme } from '@/lib/theme';
 
 function clampPercent(raw: FormDataEntryValue | null, fallback: number): number {
   const n = parseFloat((raw ?? '').toString());
@@ -39,6 +40,7 @@ export async function POST(req: NextRequest) {
   const positionY = clampPercent(formData.get('position_y'), 50);
   const widthPx = parseWidth(formData.get('width_px'));
   const inspiredBy = parseInspirations(formData.get('inspired_by'));
+  const withTheme = formData.get('with_theme') === 'on';
 
   if (!content) {
     return NextResponse.redirect(new URL('/ask?error=empty', req.url));
@@ -80,7 +82,15 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    console.log('ask/submit step:before-questions-insert');
+    let themeIdToAttach: string | null = null;
+    if (withTheme) {
+      const activeTheme = await fetchActiveTheme();
+      themeIdToAttach = activeTheme?.id ?? null;
+    }
+    console.log('ask/submit step:before-questions-insert', {
+      withTheme,
+      themeIdToAttach,
+    });
     const { data: qres, error: qerr } = await supabaseAdmin
       .from('questions')
       .insert({
@@ -91,6 +101,7 @@ export async function POST(req: NextRequest) {
         position_x: positionX,
         position_y: positionY,
         width_px: widthPx,
+        theme_id: themeIdToAttach,
       })
       .select('id')
       .single();

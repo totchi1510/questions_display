@@ -146,11 +146,14 @@ function clampPercent(n: number) {
 
 type Props = {
   existing: QuestionTile[];
+  /** Active theme label, if any — used to render an opt-in checkbox. */
+  themeLabel?: string | null;
 };
 
-export default function AskCanvas({ existing }: Props) {
+export default function AskCanvas({ existing, themeLabel }: Props) {
   const [content, setContent] = useState('');
   const [inspirations, setInspirations] = useState<string[]>([]);
+  const [withTheme, setWithTheme] = useState<boolean>(Boolean(themeLabel));
 
   const initialNodes: Node[] = useMemo(() => {
     const existingNodes: Node[] = existing.map((item) => ({
@@ -253,6 +256,24 @@ export default function AskCanvas({ existing }: Props) {
 
   return (
     <form method="post" action="/ask/submit" className="flex flex-col gap-6">
+      {themeLabel && (
+        <label className="inline-flex items-start gap-2 text-sm rounded-2xl border border-black/15 bg-white/70 px-4 py-3">
+          <input
+            type="checkbox"
+            name="with_theme"
+            checked={withTheme}
+            onChange={(e) => setWithTheme(e.target.checked)}
+            className="mt-0.5 accent-[#FAD55A]"
+          />
+          <span className="leading-snug">
+            <span className="font-semibold">今月のテーマ「{themeLabel}」に関連した問い</span>
+            <span className="block text-xs text-gray-500 mt-0.5">
+              チェックを外すと「テーマ外の掲示板」に貼られます。
+            </span>
+          </span>
+        </label>
+      )}
+
       <label htmlFor="content" className="text-sm font-medium text-gray-600">
         問いの内容
       </label>

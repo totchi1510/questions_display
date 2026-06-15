@@ -12,7 +12,11 @@ export type QuestionTile = {
   position_x: number;
   position_y: number;
   width_px: number;
+  theme_id: string | null;
 };
+
+/** Theme filter: 'any' = no filter, 'free' = theme_id is null, string = specific theme id. */
+export type ThemeFilter = 'any' | 'free' | string;
 
 export function clampWidthPx(n: number): number {
   if (!Number.isFinite(n)) return DEFAULT_WIDTH_PX;
@@ -35,7 +39,10 @@ function jstMonthStartUtc(d: Date = new Date()): string {
   return new Date(startJstMs - 9 * 60 * 60 * 1000).toISOString();
 }
 
-export async function fetchCurrentMonthQuestions(limit = 24): Promise<{
+export async function fetchCurrentMonthQuestions(
+  limit = 24,
+  themeFilter: ThemeFilter = 'any'
+): Promise<{
   envReady: boolean;
   items: QuestionTile[];
   error?: string;
@@ -47,12 +54,20 @@ export async function fetchCurrentMonthQuestions(limit = 24): Promise<{
 
   const startUtc = jstMonthStartUtc();
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from('questions')
-      .select('id, content, created_at, published, archived, hold_count, position_x, position_y, width_px')
+      .select(
+        'id, content, created_at, published, archived, hold_count, position_x, position_y, width_px, theme_id'
+      )
       .eq('published', true)
       .eq('archived', false)
-      .gte('created_at', startUtc)
+      .gte('created_at', startUtc);
+    if (themeFilter === 'free') {
+      query = query.is('theme_id', null);
+    } else if (themeFilter !== 'any') {
+      query = query.eq('theme_id', themeFilter);
+    }
+    const { data, error } = await query
       .order('hold_count', { ascending: false })
       .order('created_at', { ascending: false })
       .limit(limit);
@@ -67,6 +82,7 @@ export async function fetchCurrentMonthQuestions(limit = 24): Promise<{
       position_x: Number(row.position_x ?? 50),
       position_y: Number(row.position_y ?? 50),
       width_px: clampWidthPx(Number(row.width_px ?? DEFAULT_WIDTH_PX)),
+      theme_id: row.theme_id ? String(row.theme_id) : null,
     }));
     return { envReady, items };
   } catch (e) {

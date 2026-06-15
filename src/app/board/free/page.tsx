@@ -4,7 +4,6 @@ import {
   fetchCurrentMonthQuestions,
   fetchQuestionLinks,
 } from '@/lib/questions';
-import { fetchActiveTheme } from '@/lib/theme';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,16 +16,11 @@ function siteUrl() {
 
 function qrImageSrc(target: string) {
   const encoded = encodeURIComponent(target);
-  // Request a high-res rendering so the QR stays crisp when scaled up.
   return `https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=0&data=${encoded}`;
 }
 
-export default async function BoardPage() {
-  const theme = await fetchActiveTheme();
-  const { items, error } = await fetchCurrentMonthQuestions(
-    60,
-    theme ? theme.id : 'free'
-  );
+export default async function FreeBoardPage() {
+  const { items, error } = await fetchCurrentMonthQuestions(60, 'free');
   const links = await fetchQuestionLinks(items.map((i) => i.id));
   const monthLabel = currentMonthLabelJST();
   const askUrl = `${siteUrl()}/ask`;
@@ -42,15 +36,13 @@ export default async function BoardPage() {
       </header>
 
       <main className="px-10 pb-32">
-        {theme && (
-          <div className="mb-5 text-center">
-            <p className="text-[11px] text-gray-500 tracking-[0.4em]">今月のテーマ</p>
-            <p className="mt-1 text-xl font-semibold tracking-wide">{theme.label}</p>
-            {theme.description && (
-              <p className="mt-1 text-sm text-gray-600">{theme.description}</p>
-            )}
-          </div>
-        )}
+        <div className="mb-5 text-center">
+          <p className="text-[11px] text-gray-500 tracking-[0.4em]">テーマ外の問い</p>
+          <p className="mt-1 text-xl font-semibold tracking-wide">自由な問い</p>
+          <p className="mt-1 text-sm text-gray-600">
+            今月のテーマに縛られない、こぼれ落ちた問いたち。
+          </p>
+        </div>
         <QuestionWall items={items} links={links} />
 
         {error && (
