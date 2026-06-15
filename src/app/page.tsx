@@ -3,6 +3,7 @@ import BigQ from '@/components/BigQ';
 import QuestionGraph from '@/components/QuestionGraph';
 import QuestionWall from '@/components/QuestionWall';
 import SettingsMenu from '@/components/SettingsMenu';
+import TabSwitch, { type Tab } from '@/components/TabSwitch';
 import {
   currentMonthLabelJST,
   fetchCurrentMonthQuestions,
@@ -14,15 +15,26 @@ import { fetchActiveTheme } from '@/lib/theme';
 
 export const dynamic = 'force-dynamic';
 
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const sp = (await searchParams) ?? {};
+  const tabParam = typeof sp.tab === 'string' ? sp.tab : undefined;
+
   const staff = await getStaffRole();
   const hasAuthor = Boolean(await getAuthorToken());
-  const { items, error } = await fetchCurrentMonthQuestions(24);
+  const theme = await fetchActiveTheme();
+
+  const activeTab: Tab = tabParam === 'free' ? 'free' : theme ? 'themed' : 'free';
+  const themeFilter = activeTab === 'free' ? 'free' : (theme?.id ?? 'free');
+
+  const { items, error } = await fetchCurrentMonthQuestions(24, themeFilter);
   const visibleIds = items.map((i) => i.id);
-  const [links, mySet, theme] = await Promise.all([
+  const [links, mySet] = await Promise.all([
     fetchQuestionLinks(visibleIds),
     fetchMyQuestionIds(visibleIds),
-    fetchActiveTheme(),
   ]);
   const myIds = Array.from(mySet);
   const monthLabel = currentMonthLabelJST();
@@ -65,16 +77,29 @@ export default async function Home() {
         </section>
 
         <section className="max-w-6xl mx-auto">
-          {theme && (
-            <div className="mb-4 rounded-2xl border border-black/10 bg-white/60 px-5 py-3 text-center">
-              <p className="text-[11px] text-gray-500 tracking-[0.3em]">今月のテーマ</p>
-              <p className="mt-1 text-lg font-semibold">{theme.label}</p>
-              {theme.description && (
-                <p className="mt-1 text-sm text-gray-600 leading-relaxed">{theme.description}</p>
-              )}
-            </div>
+          <div className="mb-5 flex justify-center">
+            <TabSwitch
+              active={activeTab}
+              themedHref="/?tab=themed"
+              freeHref="/?tab=free"
+              themedLabel={theme ? theme.label : 'テーマ'}
+              themedDisabled={!theme}
+            />
+          </div>
+          {activeTab === 'themed' && theme?.description && (
+            <p className="mb-4 text-center text-sm text-gray-600 leading-relaxed">
+              {theme.description}
+            </p>
           )}
-          <QuestionWall items={items} links={links} interactive myIds={myIds} />
+          {items.length === 0 ? (
+            <p className="py-12 text-center text-sm text-gray-400">
+              {activeTab === 'themed'
+                ? 'まだこのテーマに関連する問いはありません'
+                : 'まだテーマなしの問いはありません'}
+            </p>
+          ) : (
+            <QuestionWall items={items} links={links} interactive myIds={myIds} />
+          )}
           <p className="mt-3 text-center text-xs text-gray-400">
             カーソルを合わせると関連が強調 / クリックで拡大表示 / ピンチで拡大縮小 / 自分の問い(黄色破線枠)はドラッグで動かせます
           </p>

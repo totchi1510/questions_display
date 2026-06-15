@@ -37,11 +37,7 @@ export default async function FreeBoardPage() {
 
       <main className="px-10 pb-32">
         <div className="mb-5 text-center">
-          <p className="text-[11px] text-gray-500 tracking-[0.4em]">テーマ外の問い</p>
-          <p className="mt-1 text-xl font-semibold tracking-wide">自由な問い</p>
-          <p className="mt-1 text-sm text-gray-600">
-            今月のテーマに縛られない、こぼれ落ちた問いたち。
-          </p>
+          <p className="text-xl font-semibold tracking-wide">テーマなし</p>
         </div>
         <QuestionWall items={items} links={links} />
 

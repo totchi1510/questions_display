@@ -11,6 +11,7 @@ type MyQuestion = {
   published: boolean;
   archived: boolean;
   hold_count: number;
+  theme_id: string | null;
 };
 
 function statusOf(q: Pick<MyQuestion, 'published' | 'archived'>): {
@@ -27,6 +28,38 @@ const TONE_CLASS: Record<'pending' | 'live' | 'hidden', string> = {
   live: 'bg-green-100 text-green-800',
   hidden: 'bg-gray-200 text-gray-600',
 };
+
+function QuestionList({ items }: { items: MyQuestion[] }) {
+  return (
+    <ul className="space-y-4">
+      {items.map((q) => {
+        const status = statusOf(q);
+        return (
+          <li
+            key={q.id}
+            className="rounded-3xl border border-black/20 bg-white p-6 shadow-sm shadow-yellow-200/30"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-gray-500 mb-3">
+              <span>{new Date(q.created_at).toLocaleString('ja-JP')}</span>
+              <span className={`px-2 py-0.5 rounded-full ${TONE_CLASS[status.tone]}`}>
+                {status.label}
+              </span>
+            </div>
+            <p className="text-base leading-relaxed whitespace-pre-wrap break-words">
+              {q.content}
+            </p>
+            <div className="mt-4 flex justify-end text-sm text-gray-600">
+              <span title="この問いを考えている人">
+                🤔 {q.hold_count}{' '}
+                <span className="text-xs text-gray-500">人が考えています</span>
+              </span>
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
 
 export default async function MyQuestionsPage() {
   const token = await getAuthorToken();
@@ -62,7 +95,7 @@ export default async function MyQuestionsPage() {
   try {
     const { data, error } = await supabaseAdmin
       .from('questions')
-      .select('id, content, created_at, published, archived, hold_count')
+      .select('id, content, created_at, published, archived, hold_count, theme_id')
       .eq('author_token', token)
       .order('created_at', { ascending: false })
       .limit(100);
@@ -71,6 +104,30 @@ export default async function MyQuestionsPage() {
   } catch {
     errorMsg = '取得に失敗しました';
   }
+
+  const themed = items.filter((q) => q.theme_id !== null);
+  const free = items.filter((q) => q.theme_id === null);
+
+  // Look up theme labels for any themed questions so the section heading can
+  // mention the theme(s) the author posted under.
+  const themeIds = Array.from(new Set(themed.map((q) => q.theme_id!).filter(Boolean)));
+  let themeLabels = new Map<string, string>();
+  if (themeIds.length > 0) {
+    try {
+      const { data: rows } = await supabaseAdmin
+        .from('themes')
+        .select('id, label')
+        .in('id', themeIds);
+      themeLabels = new Map(
+        (rows ?? []).map((r) => [String(r.id), String(r.label)])
+      );
+    } catch {
+      // best-effort; heading falls back to plain "テーマ"
+    }
+  }
+  const distinctThemeLabels = Array.from(
+    new Set(themed.map((q) => themeLabels.get(q.theme_id ?? '')).filter(Boolean) as string[])
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white via-[#FFF7D6] to-white text-black px-6 py-12">
@@ -87,33 +144,38 @@ export default async function MyQuestionsPage() {
         ) : items.length === 0 ? (
           <p className="text-center text-sm text-gray-500">まだ投稿はありません。</p>
         ) : (
-          <ul className="space-y-4">
-            {items.map((q) => {
-              const status = statusOf(q);
-              return (
-                <li
-                  key={q.id}
-                  className="rounded-3xl border border-black/20 bg-white p-6 shadow-sm shadow-yellow-200/30"
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-gray-500 mb-3">
-                    <span>{new Date(q.created_at).toLocaleString('ja-JP')}</span>
-                    <span className={`px-2 py-0.5 rounded-full ${TONE_CLASS[status.tone]}`}>
-                      {status.label}
+          <div className="space-y-12">
+            <section>
+              <div className="flex items-baseline justify-between mb-4">
+                <h2 className="text-sm font-semibold tracking-[0.3em] text-gray-700">
+                  テーマ
+                  {distinctThemeLabels.length > 0 && (
+                    <span className="ml-2 text-xs text-gray-500 tracking-normal font-normal">
+                      ({distinctThemeLabels.join(' / ')})
                     </span>
-                  </div>
-                  <p className="text-base leading-relaxed whitespace-pre-wrap break-words">
-                    {q.content}
-                  </p>
-                  <div className="mt-4 flex justify-end text-sm text-gray-600">
-                    <span title="この問いを考えている人">
-                      🤔 {q.hold_count}{' '}
-                      <span className="text-xs text-gray-500">人が考えています</span>
-                    </span>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
+                  )}
+                </h2>
+                <span className="text-xs text-gray-400 tabular-nums">{themed.length}件</span>
+              </div>
+              {themed.length === 0 ? (
+                <p className="text-sm text-gray-400">テーマに紐づいた問いはまだありません。</p>
+              ) : (
+                <QuestionList items={themed} />
+              )}
+            </section>
+
+            <section>
+              <div className="flex items-baseline justify-between mb-4">
+                <h2 className="text-sm font-semibold tracking-[0.3em] text-gray-700">テーマなし</h2>
+                <span className="text-xs text-gray-400 tabular-nums">{free.length}件</span>
+              </div>
+              {free.length === 0 ? (
+                <p className="text-sm text-gray-400">テーマなしの問いはまだありません。</p>
+              ) : (
+                <QuestionList items={free} />
+              )}
+            </section>
+          </div>
         )}
 
         <div className="mt-12 text-center space-x-6 text-sm">

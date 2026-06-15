@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import QuestionGraph from '@/components/QuestionGraph';
+import TabSwitch, { type Tab } from '@/components/TabSwitch';
 import {
   currentMonthLabelJST,
   fetchCurrentMonthQuestions,
@@ -10,13 +11,22 @@ import { fetchActiveTheme } from '@/lib/theme';
 
 export const dynamic = 'force-dynamic';
 
-export default async function GraphPage() {
-  const { items, error } = await fetchCurrentMonthQuestions(120);
+export default async function GraphPage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const sp = (await searchParams) ?? {};
+  const tabParam = typeof sp.tab === 'string' ? sp.tab : undefined;
+  const theme = await fetchActiveTheme();
+  const activeTab: Tab = tabParam === 'free' ? 'free' : theme ? 'themed' : 'free';
+  const themeFilter = activeTab === 'free' ? 'free' : (theme?.id ?? 'free');
+
+  const { items, error } = await fetchCurrentMonthQuestions(120, themeFilter);
   const visibleIds = items.map((i) => i.id);
-  const [links, mySet, theme] = await Promise.all([
+  const [links, mySet] = await Promise.all([
     fetchQuestionLinks(visibleIds),
     fetchMyQuestionIds(visibleIds),
-    fetchActiveTheme(),
   ]);
   const myIds = Array.from(mySet);
   const monthLabel = currentMonthLabelJST();
@@ -30,15 +40,27 @@ export default async function GraphPage() {
           <p className="mt-3 text-sm text-gray-600">
             問い同士のつながりを俯瞰します。ノードにカーソルを合わせると関連するつながりが浮かびます。
           </p>
-          {theme && (
-            <p className="mt-3 inline-flex items-center gap-2 rounded-full border border-black/15 bg-white/70 px-4 py-1 text-xs text-gray-700 tracking-wider">
-              <span className="text-gray-400">今月のテーマ</span>
-              <span className="font-semibold">{theme.label}</span>
-            </p>
-          )}
         </header>
 
-        <QuestionGraph items={items} links={links} myIds={myIds} />
+        <div className="mb-5 flex justify-center">
+          <TabSwitch
+            active={activeTab}
+            themedHref="/graph?tab=themed"
+            freeHref="/graph?tab=free"
+            themedLabel={theme ? theme.label : 'テーマ'}
+            themedDisabled={!theme}
+          />
+        </div>
+
+        {items.length === 0 ? (
+          <p className="py-16 text-center text-sm text-gray-400">
+            {activeTab === 'themed'
+              ? 'まだこのテーマに関連する問いはありません'
+              : 'まだテーマなしの問いはありません'}
+          </p>
+        ) : (
+          <QuestionGraph items={items} links={links} myIds={myIds} />
+        )}
 
         {error && (
           <p className="mt-6 text-center text-sm text-amber-700">
