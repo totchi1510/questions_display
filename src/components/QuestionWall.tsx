@@ -22,10 +22,16 @@ import {
 import '@xyflow/react/dist/style.css';
 import HoldButton from './HoldButton';
 import {
+  MAX_WIDTH_PX,
+  MIN_WIDTH_PX,
+  clampWidthPx,
   stickyWidthPx,
   type QuestionLink,
   type QuestionTile,
 } from '@/lib/questions';
+
+/** Step used by the on-board resize control (px of poster-chosen baseline). */
+const RESIZE_STEP_PX = 40;
 
 const X_SCALE = 16;
 const Y_SCALE = 9;
@@ -53,6 +59,10 @@ type StickyData = {
   clickable: boolean;
   /** Authored by the current visitor — show a movable affordance. */
   mine?: boolean;
+  /** Poster-chosen baseline width (override-aware), before the 🤔 bonus. */
+  baseWidthPx: number;
+  /** Resize own note by `delta` px of baseline (clamped + persisted upstream). */
+  onResize?: (delta: number) => void;
 };
 
 /**
@@ -82,13 +92,15 @@ const HANDLE_SIDES: { key: Side; position: Position }[] = [
 ];
 
 function StickyNode({ data }: { data: StickyData }) {
-  const { item, clickable, mine } = data;
+  const { item, clickable, mine, baseWidthPx, onResize } = data;
   const { ancestry } = useContext(HoverContext);
   const inAncestry = ancestry ? ancestry.nodes.has(item.id) : true;
   const dimmed = ancestry !== null && !inAncestry;
   const highlighted = ancestry !== null && inAncestry;
   const { rotation, color } = stickyStyle(item.id);
-  const width = stickyWidthPx(item.width_px, item.hold_count);
+  const width = stickyWidthPx(baseWidthPx, item.hold_count);
+  const canShrink = baseWidthPx > MIN_WIDTH_PX;
+  const canGrow = baseWidthPx < MAX_WIDTH_PX;
 
   const stopBubble = (e: React.SyntheticEvent) => {
     e.stopPropagation();
@@ -137,6 +149,34 @@ function StickyNode({ data }: { data: StickyData }) {
           />
         </Fragment>
       ))}
+      {mine && onResize && (
+        <div
+          className="mb-2 flex items-center justify-end gap-1.5 text-[11px] text-gray-500"
+          onClick={stopBubble}
+          onMouseDown={stopBubble}
+          onPointerDown={stopBubble}
+        >
+          <span className="mr-0.5 tracking-wider">大きさ</span>
+          <button
+            type="button"
+            aria-label="小さくする"
+            disabled={!canShrink}
+            onClick={() => onResize(-RESIZE_STEP_PX)}
+            className="h-6 w-6 rounded-full border border-black/15 bg-white/80 leading-none hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            −
+          </button>
+          <button
+            type="button"
+            aria-label="大きくする"
+            disabled={!canGrow}
+            onClick={() => onResize(RESIZE_STEP_PX)}
+            className="h-6 w-6 rounded-full border border-black/15 bg-white/80 leading-none hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            ＋
+          </button>
+        </div>
+      )}
       <div className="text-sm leading-relaxed whitespace-pre-wrap [word-break:auto-phrase] [line-break:strict]">
         {item.content}
       </div>
@@ -259,6 +299,8 @@ type Props = {
   interactive?: boolean;
   /** Question ids the current visitor authored. Those become draggable. */
   myIds?: string[];
+  /** Fill the parent box (h-full) instead of holding a 16:9 aspect ratio. */
+  fill?: boolean;
 };
 
 export default function QuestionWall({
@@ -266,6 +308,7 @@ export default function QuestionWall({
   links = [],
   interactive = false,
   myIds = [],
+  fill = false,
 }: Props) {
   const [focused, setFocused] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<QuestionTile | null>(null);
@@ -276,6 +319,24 @@ export default function QuestionWall({
   const [localPositions, setLocalPositions] = useState<
     Record<string, { x: number; y: number }>
   >({});
+  // Same idea for resize: the note keeps its new width without a page reload.
+  const [localWidths, setLocalWidths] = useState<Record<string, number>>({});
+
+  const resizeNote = useCallback(
+    (id: string, currentBase: number, delta: number) => {
+      const next = clampWidthPx(currentBase + delta);
+      if (next === currentBase) return;
+      setLocalWidths((prev) => ({ ...prev, [id]: next }));
+      fetch(`/api/questions/${id}/size`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ width: next }),
+      }).catch(() => {
+        // Best-effort; ignore network errors for now.
+      });
+    },
+    []
+  );
 
   // Only the directly-specified inspirations (1 hop) — the chain past that
   // is intentionally NOT highlighted, so the focused note's own intent stays
@@ -300,6 +361,7 @@ export default function QuestionWall({
         const px = override ? override.x : item.position_x;
         const py = override ? override.y : item.position_y;
         const mine = mySet.has(item.id);
+        const baseWidthPx = localWidths[item.id] ?? item.width_px;
         return {
           id: item.id,
           type: 'sticky',
@@ -307,12 +369,21 @@ export default function QuestionWall({
             x: px * X_SCALE,
             y: py * Y_SCALE,
           },
-          data: { item, clickable: interactive, mine },
+          data: {
+            item,
+            clickable: interactive,
+            mine,
+            baseWidthPx,
+            onResize:
+              interactive && mine
+                ? (delta: number) => resizeNote(item.id, baseWidthPx, delta)
+                : undefined,
+          },
           draggable: interactive && mine,
           selectable: false,
         };
       }),
-    [items, interactive, mySet, localPositions]
+    [items, interactive, mySet, localPositions, localWidths, resizeNote]
   );
 
   const edges: Edge[] = useMemo(() => {
@@ -417,7 +488,11 @@ export default function QuestionWall({
 
   return (
     <>
-      <div className="relative aspect-[16/9] w-full rounded-2xl overflow-hidden border border-black/10 bg-[#FFFCEC]">
+      <div
+        className={`relative w-full overflow-hidden border border-black/10 bg-[#FFFCEC] ${
+          fill ? 'h-full rounded-none' : 'aspect-[16/9] rounded-2xl'
+        }`}
+      >
         <HoverContext.Provider value={hoverState}>
         <ReactFlow
           nodes={nodes}
