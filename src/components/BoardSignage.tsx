@@ -103,12 +103,12 @@ export default function BoardSignage({
             <QuestionWall items={items} links={links} fill hideAttribution />
           </div>
 
-          <aside className="absolute bottom-14 right-16 flex items-center gap-4 rounded-2xl border border-black/10 bg-white/95 px-5 py-4 shadow-xl shadow-black/15 backdrop-blur">
-            <div className="text-right leading-tight">
-              <p className="text-xl font-bold tracking-wider text-gray-900">
+          <aside className="absolute bottom-14 right-16 flex flex-col items-center gap-2 rounded-2xl border border-black/10 bg-white/95 px-5 py-4 shadow-xl shadow-black/15 backdrop-blur">
+            <div className="text-center leading-tight">
+              <p className="text-lg font-bold tracking-wider text-gray-900">
                 問いを投稿する
               </p>
-              <p className="mt-1 text-xs text-gray-500 tracking-wide">
+              <p className="mt-0.5 text-[11px] text-gray-500 tracking-wide">
                 QR を読み取って今すぐ
               </p>
             </div>
@@ -116,8 +116,8 @@ export default function BoardSignage({
             <img
               src={qrImageSrc(askUrl)}
               alt="問いを投稿する QR コード"
-              width={136}
-              height={136}
+              width={112}
+              height={112}
               className="block rounded-lg"
             />
           </aside>
