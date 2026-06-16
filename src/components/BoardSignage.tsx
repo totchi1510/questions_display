@@ -51,6 +51,7 @@ export default function BoardSignage({
             margin: 0;
             padding: 0;
             background: white;
+            overflow: hidden;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
           }
@@ -69,7 +70,7 @@ export default function BoardSignage({
       `}</style>
 
       <div className="board-stage relative flex flex-col overflow-hidden rounded-3xl border border-black/10 bg-gradient-to-b from-white via-[#FFF7D6] to-white text-black shadow-xl shadow-black/10">
-        <header className="flex items-center justify-between px-10 pt-7 pb-4">
+        <header className="flex items-center justify-between px-12 pt-6 pb-3">
           <span className="text-base font-semibold tracking-wider text-gray-700">
             Questions Display
           </span>
@@ -80,9 +81,9 @@ export default function BoardSignage({
           </div>
         </header>
 
-        <div className="px-10 text-center">
+        <div className="px-12 text-center">
           {eyebrow && (
-            <p className="text-sm text-gray-500 tracking-[0.5em]">{eyebrow}</p>
+            <p className="text-xs text-gray-500 tracking-[0.5em]">{eyebrow}</p>
           )}
           <p className="mt-1 text-3xl font-semibold tracking-wide">{title}</p>
           {description && (
@@ -90,29 +91,35 @@ export default function BoardSignage({
           )}
         </div>
 
-        <main className="relative mt-4 min-h-0 flex-1 px-10 pb-10">
-          <div className="h-full w-full overflow-hidden rounded-2xl">
-            <QuestionWall items={items} links={links} fill />
+        {/* Wall fills the remaining height. pr/pb reserve a safe corner so notes
+            never hide behind the post-CTA card and the card stays clear of the
+            page edge (where print margins would otherwise clip it). */}
+        <main className="relative mt-3 min-h-0 flex-1 px-12 pb-10">
+          <div className="h-full w-full overflow-hidden rounded-2xl border border-black/10">
+            <QuestionWall items={items} links={links} fill hideAttribution />
           </div>
 
-          <aside className="absolute bottom-12 right-14 flex flex-col items-center gap-2">
-            <div className="rounded-2xl bg-white p-3 shadow-lg shadow-black/15 border border-black/10">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={qrImageSrc(askUrl)}
-                alt="問いを投稿する QR コード"
-                width={220}
-                height={220}
-                className="block"
-              />
+          <aside className="absolute bottom-14 right-16 flex items-center gap-4 rounded-2xl border border-black/10 bg-white/95 px-5 py-4 shadow-xl shadow-black/15 backdrop-blur">
+            <div className="text-right leading-tight">
+              <p className="text-xl font-bold tracking-wider text-gray-900">
+                問いを投稿する
+              </p>
+              <p className="mt-1 text-xs text-gray-500 tracking-wide">
+                QR を読み取って今すぐ
+              </p>
             </div>
-            <span className="rounded-full bg-black/75 px-3 py-1 text-sm font-bold tracking-wider text-white">
-              問いを投稿する
-            </span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={qrImageSrc(askUrl)}
+              alt="問いを投稿する QR コード"
+              width={176}
+              height={176}
+              className="block rounded-lg"
+            />
           </aside>
 
           {error && (
-            <p className="no-print absolute bottom-2 left-10 text-sm text-amber-700">
+            <p className="no-print absolute bottom-2 left-12 text-sm text-amber-700">
               データ取得でエラーが発生しました: {error}
             </p>
           )}

@@ -204,7 +204,6 @@ function sideToward(dx: number, dy: number): Side {
 }
 
 const nodeTypes = { sticky: StickyNode };
-const proOptions: ProOptions = { hideAttribution: false };
 const nodeOrigin: [number, number] = [0.5, 0.5];
 
 function QuestionModal({
@@ -301,6 +300,8 @@ type Props = {
   myIds?: string[];
   /** Fill the parent box (h-full) instead of holding a 16:9 aspect ratio. */
   fill?: boolean;
+  /** Hide the React Flow attribution badge (clean signage output). */
+  hideAttribution?: boolean;
 };
 
 export default function QuestionWall({
@@ -309,7 +310,12 @@ export default function QuestionWall({
   interactive = false,
   myIds = [],
   fill = false,
+  hideAttribution = false,
 }: Props) {
+  const proOptions = useMemo<ProOptions>(
+    () => ({ hideAttribution }),
+    [hideAttribution]
+  );
   const [focused, setFocused] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<QuestionTile | null>(null);
   const [dragging, setDragging] = useState(false);
