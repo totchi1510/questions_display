@@ -26,7 +26,6 @@ export default async function FreeBoardPage() {
       links={links}
       monthLabel={monthLabel}
       askUrl={askUrl}
-      title="テーマなし"
       error={error}
     />
   );

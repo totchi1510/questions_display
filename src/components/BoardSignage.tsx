@@ -15,8 +15,8 @@ type Props = {
   askUrl: string;
   /** Small label above the title (e.g. 今月のテーマ). */
   eyebrow?: string;
-  /** Main heading — the theme label, or テーマなし for the free board. */
-  title: string;
+  /** Main heading — the theme label. Omit for the free board (no heading). */
+  title?: string;
   description?: string | null;
   error?: string;
 };
@@ -85,15 +85,17 @@ export default function BoardSignage({
           </div>
         </header>
 
-        <div className="px-12 text-center">
-          {eyebrow && (
-            <p className="text-xs text-gray-500 tracking-[0.5em]">{eyebrow}</p>
-          )}
-          <p className="mt-1 text-3xl font-semibold tracking-wide">{title}</p>
-          {description && (
-            <p className="mt-1.5 text-base text-gray-600">{description}</p>
-          )}
-        </div>
+        {title && (
+          <div className="px-12 text-center">
+            {eyebrow && (
+              <p className="text-xs text-gray-500 tracking-[0.5em]">{eyebrow}</p>
+            )}
+            <p className="mt-1 text-3xl font-semibold tracking-wide">{title}</p>
+            {description && (
+              <p className="mt-1.5 text-base text-gray-600">{description}</p>
+            )}
+          </div>
+        )}
 
         {/* Wall fills the remaining height. pr/pb reserve a safe corner so notes
             never hide behind the post-CTA card and the card stays clear of the
