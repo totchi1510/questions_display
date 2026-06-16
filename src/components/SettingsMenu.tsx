@@ -64,7 +64,7 @@ export default function SettingsMenu({ monthLabel, hasAuthor, staff }: Props) {
               掲示板(テーマ)
             </MenuLink>
             <MenuLink href="/board/free" onClick={() => setOpen(false)}>
-              掲示板(テーマ外)
+              掲示板(テーマなし)
             </MenuLink>
             <MenuLink href="/graph" onClick={() => setOpen(false)}>
               問いのグラフ
