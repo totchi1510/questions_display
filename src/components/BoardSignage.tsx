@@ -57,14 +57,18 @@ export default function BoardSignage({
           }
           .no-print { display: none !important; }
           .board-page { display: block; min-height: 0; padding: 0; background: white; }
+          /* Fill exactly one printed page rather than a fixed 1920px box, so
+             the layout can never overflow the paper and clip the QR — if the
+             browser honors @page it is 1920×1080, otherwise it still fits. */
           .board-stage {
-            width: 1920px;
-            height: 1080px;
+            width: 100%;
+            height: 100vh;
             max-width: none;
             aspect-ratio: auto;
             border-radius: 0;
             box-shadow: none;
             border: 0;
+            page-break-inside: avoid;
           }
         }
       `}</style>
