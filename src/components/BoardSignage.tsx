@@ -75,11 +75,15 @@ export default function BoardSignage({
       `}</style>
 
       <div className="board-stage relative flex flex-col overflow-hidden rounded-3xl border border-black/10 bg-gradient-to-b from-white via-[#FFF7D6] to-white text-black shadow-xl shadow-black/10">
-        <header className="flex items-center justify-between px-12 pt-6 pb-3">
+        <header className="relative flex items-center justify-between px-12 pt-6 pb-3">
           <span className="text-base font-semibold tracking-wider text-gray-700">
             Questions Display
           </span>
-          <h1 className="text-4xl font-bold tracking-[0.4em]">Q</h1>
+          {/* Absolutely centered so the Q sits at the true page center
+              regardless of the differing left/right header widths. */}
+          <h1 className="pointer-events-none absolute left-1/2 -translate-x-1/2 text-4xl font-bold">
+            Q
+          </h1>
           <div className="flex items-center gap-3">
             <span className="text-base text-gray-500">{monthLabel}</span>
             <SignageExport />
