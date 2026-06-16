@@ -302,6 +302,12 @@ type Props = {
   fill?: boolean;
   /** Hide the React Flow attribution badge (clean signage output). */
   hideAttribution?: boolean;
+  /**
+   * Allow zoom/pan of the whole canvas (with +/−/fit controls) without
+   * enabling card editing. Used on the display board to tune the framing
+   * before saving the signage PDF.
+   */
+  zoomable?: boolean;
 };
 
 export default function QuestionWall({
@@ -311,7 +317,11 @@ export default function QuestionWall({
   myIds = [],
   fill = false,
   hideAttribution = false,
+  zoomable = false,
 }: Props) {
+  // View navigation (zoom/pan) is enabled for the interactive home board and
+  // for the zoomable display board; card editing stays gated on `interactive`.
+  const navigable = interactive || zoomable;
   const proOptions = useMemo<ProOptions>(
     () => ({ hideAttribution }),
     [hideAttribution]
@@ -507,18 +517,18 @@ export default function QuestionWall({
           nodeOrigin={nodeOrigin}
           fitView
           fitViewOptions={{ padding: 0.15 }}
-          panOnDrag={interactive}
+          panOnDrag={navigable}
           panOnScroll={false}
-          zoomOnScroll={interactive}
-          zoomOnPinch={interactive}
-          zoomOnDoubleClick={interactive}
+          zoomOnScroll={navigable}
+          zoomOnPinch={navigable}
+          zoomOnDoubleClick={navigable}
           minZoom={0.4}
           maxZoom={3}
           nodesDraggable={false}
           nodesConnectable={false}
           elementsSelectable={false}
           edgesFocusable={false}
-          preventScrolling={interactive}
+          preventScrolling={navigable}
           onNodeClick={onNodeClick}
           onNodeMouseEnter={onNodeMouseEnter}
           onNodeMouseLeave={onNodeMouseLeave}
@@ -532,7 +542,13 @@ export default function QuestionWall({
           proOptions={proOptions}
         >
           <Background gap={28} size={1.5} color="rgba(0,0,0,0.12)" />
-          {interactive && <Controls showInteractive={false} position="bottom-right" />}
+          {navigable && (
+            <Controls
+              showInteractive={false}
+              position={zoomable && !interactive ? 'bottom-left' : 'bottom-right'}
+              className="no-print"
+            />
+          )}
         </ReactFlow>
         </HoverContext.Provider>
       </div>

@@ -102,7 +102,7 @@ export default function BoardSignage({
             page edge (where print margins would otherwise clip it). */}
         <main className="relative mt-3 min-h-0 flex-1 px-12 pb-10">
           <div className="h-full w-full overflow-hidden rounded-2xl border border-black/10">
-            <QuestionWall items={items} links={links} fill hideAttribution />
+            <QuestionWall items={items} links={links} fill hideAttribution zoomable />
           </div>
 
           <aside className="absolute bottom-14 right-16 flex flex-col items-center gap-2 rounded-2xl border border-black/10 bg-white/95 px-5 py-4 shadow-xl shadow-black/15 backdrop-blur">
