@@ -1,11 +1,12 @@
 import PrintButton from '@/components/PrintButton';
 import QuestionWall from '@/components/QuestionWall';
+import SignageExport from '@/components/SignageExport';
 import type { QuestionLink, QuestionTile } from '@/lib/questions';
 
 function qrImageSrc(target: string) {
-  const encoded = encodeURIComponent(target);
-  // Request a high-res rendering so the QR stays crisp when scaled up.
-  return `https://api.qrserver.com/v1/create-qr-code/?size=480x480&margin=0&data=${encoded}`;
+  // Same-origin proxy so the PNG export (html-to-image) isn't tainted by a
+  // cross-origin QR image. The proxy requests a high-res rendering upstream.
+  return `/api/qr?data=${encodeURIComponent(target)}`;
 }
 
 type Props = {
@@ -79,8 +80,9 @@ export default function BoardSignage({
             Questions Display
           </span>
           <h1 className="text-4xl font-bold tracking-[0.4em]">Q</h1>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <span className="text-base text-gray-500">{monthLabel}</span>
+            <SignageExport />
             <PrintButton />
           </div>
         </header>
