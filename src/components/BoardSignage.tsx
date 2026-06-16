@@ -116,8 +116,8 @@ export default function BoardSignage({
             <img
               src={qrImageSrc(askUrl)}
               alt="問いを投稿する QR コード"
-              width={176}
-              height={176}
+              width={136}
+              height={136}
               className="block rounded-lg"
             />
           </aside>
