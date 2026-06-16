@@ -15,6 +15,8 @@ import {
 import '@xyflow/react/dist/style.css';
 import {
   DEFAULT_WIDTH_PX,
+  MAX_WIDTH_PX,
+  MIN_WIDTH_PX,
   stickyWidthPx,
   type QuestionTile,
 } from '@/lib/questions';
@@ -105,12 +107,12 @@ function ExistingStickyNode({ data }: { data: ExistingData }) {
   );
 }
 
-function NewStickyNode({ data }: { data: { content: string } }) {
+function NewStickyNode({ data }: { data: { content: string; width: number } }) {
   return (
     <div
       className="relative rounded-xl border-2 border-black/40 p-3 shadow-[0_8px_20px_-4px_rgba(0,0,0,0.25)] select-none"
       style={{
-        width: DEFAULT_WIDTH_PX,
+        width: data.width,
         backgroundColor: '#FAD55A',
         transform: 'rotate(-2deg)',
       }}
@@ -154,6 +156,7 @@ export default function AskCanvas({ existing, themeLabel }: Props) {
   const [content, setContent] = useState('');
   const [inspirations, setInspirations] = useState<string[]>([]);
   const [withTheme, setWithTheme] = useState<boolean>(Boolean(themeLabel));
+  const [widthPx, setWidthPx] = useState<number>(DEFAULT_WIDTH_PX);
 
   const initialNodes: Node[] = useMemo(() => {
     const existingNodes: Node[] = existing.map((item) => ({
@@ -216,11 +219,11 @@ export default function AskCanvas({ existing, themeLabel }: Props) {
     () =>
       nodes.map((n) => {
         if (n.id === NEW_NODE_ID) {
-          return { ...n, data: { content } };
+          return { ...n, data: { content, width: widthPx } };
         }
         return { ...n, data: { item: n.data.item, selected: inspirations.includes(n.id) } };
       }),
-    [nodes, content, inspirations]
+    [nodes, content, inspirations, widthPx]
   );
 
   // Preview edges: dashed lines from the new note to each selected inspiration.
@@ -288,6 +291,30 @@ export default function AskCanvas({ existing, themeLabel }: Props) {
         required
       />
 
+      <div className="flex items-center gap-3">
+        <label htmlFor="width" className="shrink-0 text-sm font-medium text-gray-600">
+          問いの大きさ
+        </label>
+        <input
+          id="width"
+          type="range"
+          min={MIN_WIDTH_PX}
+          max={MAX_WIDTH_PX}
+          step={20}
+          value={widthPx}
+          onChange={(e) => setWidthPx(Number(e.target.value))}
+          className="w-full accent-[#FAD55A]"
+          aria-label="問いの大きさ"
+        />
+        <button
+          type="button"
+          onClick={() => setWidthPx(DEFAULT_WIDTH_PX)}
+          className="shrink-0 rounded-full border border-black/15 px-3 py-1 text-xs text-gray-500 hover:bg-black/5"
+        >
+          標準
+        </button>
+      </div>
+
       <p className="text-sm text-gray-500">
         黄色い付箋を<strong className="font-semibold">ドラッグ</strong>して場所を選択。
         既存の付箋を<strong className="font-semibold">タップ</strong>すると、
@@ -334,7 +361,7 @@ export default function AskCanvas({ existing, themeLabel }: Props) {
 
       <input type="hidden" name="position_x" value={pos.x.toFixed(2)} />
       <input type="hidden" name="position_y" value={pos.y.toFixed(2)} />
-      <input type="hidden" name="width_px" value={DEFAULT_WIDTH_PX} />
+      <input type="hidden" name="width_px" value={widthPx} />
       <input type="hidden" name="inspired_by" value={inspirations.join(',')} />
 
       <div className="flex items-center justify-between text-sm text-gray-500">

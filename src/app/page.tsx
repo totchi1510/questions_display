@@ -58,8 +58,6 @@ export default async function Home({
           </h1>
           <p className="text-sm sm:text-base text-gray-600 max-w-xl mx-auto leading-relaxed">
             誰かの問いにふと立ち止まる
-            <br className="hidden sm:inline" />
-            考えが広がる
           </p>
           {theme && (
             <p className="mt-4 inline-flex items-center gap-2 rounded-full border border-black/15 bg-white/70 px-4 py-1 text-xs text-gray-700 tracking-wider">
