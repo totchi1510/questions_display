@@ -75,6 +75,10 @@ export default function BoardSignage({
       `}</style>
 
       <div className="board-stage relative flex flex-col overflow-hidden rounded-3xl border border-black/10 bg-gradient-to-b from-white via-[#FFF7D6] to-white text-black shadow-xl shadow-black/10">
+        <p className="absolute bottom-4 left-12 z-10 text-xs text-gray-400">
+          制作: DS部
+        </p>
+
         <header className="relative flex items-center justify-between px-12 pt-6 pb-3">
           <span className="text-base font-semibold tracking-wider text-gray-700">
             Questions Display
