@@ -123,6 +123,7 @@ export default async function Home({
           <Link href="/archive" className="text-sm text-gray-500 underline">
             過去の問いを見る
           </Link>
+          <p className="mt-3 text-xs text-gray-400">制作: DS部</p>
         </footer>
       </main>
     </div>
