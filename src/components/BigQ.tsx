@@ -31,7 +31,9 @@ export default function BigQ({ className = '' }: Props) {
   return (
     <div
       aria-hidden="true"
-      className={`block ${className}`}
+      // `isolate` keeps the r3f canvas (position:relative) from painting over
+      // page chrome such as the settings dropdown.
+      className={`isolate block ${className}`}
       style={{
         width: 'clamp(12rem, 22vw, 18rem)',
         height: 'clamp(12rem, 22vw, 18rem)',

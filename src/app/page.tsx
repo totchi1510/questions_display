@@ -41,7 +41,12 @@ export default async function Home({
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white via-[#FFF7D6] to-white text-black">
-      <header className="flex items-center justify-between px-6 py-5 border-b border-black/10 backdrop-blur-sm bg-white/70">
+      {/* relative z-50: the 3D Q below renders into a react-three-fiber canvas
+          whose wrapper is position:relative, so it paints above any
+          non-positioned header. The settings dropdown is z-50 but scoped
+          inside this header's stacking context (backdrop-blur creates one),
+          so the header itself has to outrank the canvas. */}
+      <header className="relative z-50 flex items-center justify-between px-6 py-5 border-b border-black/10 backdrop-blur-sm bg-white/70">
         <span className="text-sm font-semibold tracking-wider">Questions Display</span>
         <SettingsMenu
           monthLabel={monthLabel}
