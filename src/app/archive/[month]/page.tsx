@@ -30,7 +30,7 @@ async function fetchMonthArchive(
   const { startUtc, endUtc } = jstMonthRangeUtc(monthKey);
   let query = supabase
     .from('archive_questions')
-    .select('id, content, likes_count, created_at, position_x, position_y, width_px, theme_id')
+    .select('id, content, hold_count, created_at, position_x, position_y, width_px, theme_id')
     .gte('created_at', startUtc)
     .lt('created_at', endUtc);
   if (tab === 'free') {
@@ -39,7 +39,7 @@ async function fetchMonthArchive(
     query = query.not('theme_id', 'is', null);
   }
   const { data, error } = await query
-    .order('likes_count', { ascending: false })
+    .order('hold_count', { ascending: false })
     .order('created_at', { ascending: false });
 
   if (error) return { items: [], themesPresent: [] };
@@ -47,7 +47,7 @@ async function fetchMonthArchive(
     id: String(row.id),
     content: String(row.content ?? ''),
     created_at: String(row.created_at),
-    hold_count: Number(row.likes_count ?? 0),
+    hold_count: Number(row.hold_count ?? 0),
     position_x: Number(row.position_x ?? 50),
     position_y: Number(row.position_y ?? 50),
     width_px: clampWidthPx(Number(row.width_px ?? DEFAULT_WIDTH_PX)),

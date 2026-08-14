@@ -1,4 +1,3 @@
-import PrintButton from '@/components/PrintButton';
 import QuestionWall from '@/components/QuestionWall';
 import SignageExport from '@/components/SignageExport';
 import type { QuestionLink, QuestionTile } from '@/lib/questions';
@@ -24,9 +23,13 @@ type Props = {
 
 /**
  * A fixed 16:9 "stage" tuned for full-HD signage. On screen it scales to fit
- * its container; when printed it locks to exactly 1920×1080 so the saved PDF
- * fills a single signage frame with no overflow page. All interactive chrome
- * carries `no-print` so the export stays clean.
+ * its container; `SignageExport` captures it as an exact 1920×1080 PNG, which
+ * is the supported way to get an image for the display.
+ *
+ * Printing is NOT that path: browsers ignore the `@page` size, so a saved PDF
+ * comes out at the wrong aspect ratio. The print rules below only exist so an
+ * accidental Ctrl+P still yields something sane. All interactive chrome
+ * carries `no-print`, which doubles as the export filter.
  */
 export default function BoardSignage({
   items,
@@ -91,7 +94,6 @@ export default function BoardSignage({
           <div className="flex items-center gap-3">
             <span className="text-base text-gray-500">{monthLabel}</span>
             <SignageExport />
-            <PrintButton />
           </div>
         </header>
 
