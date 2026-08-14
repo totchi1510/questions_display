@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
   try {
     const { data: q, error: getErr } = await supabaseAdmin
       .from('questions')
-      .select('id, content, created_at, likes_count, archived, archived_at')
+      .select('id, content, created_at, hold_count, archived, archived_at')
       .eq('id', qid)
       .single();
     if (getErr) throw getErr;

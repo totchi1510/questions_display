@@ -27,7 +27,9 @@ export async function POST(req: NextRequest) {
     const { startUtc, endUtc } = jstMonthRangeUtc(month);
     const { data: rows, error: selErr } = await supabaseAdmin
       .from('questions')
-      .select('id, content, created_at, likes_count, position_x, position_y, width_px')
+      .select(
+        'id, content, created_at, hold_count, position_x, position_y, width_px, theme_id'
+      )
       .eq('published', true)
       .eq('archived', false)
       .gte('created_at', startUtc)
@@ -39,16 +41,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.redirect(new URL(`/admin/review?rollover=empty&month=${month}`, req.url));
     }
 
+    // Carry theme_id through: /archive/[month] splits its themed / free tabs
+    // on it, so dropping it here would file every archived question as "free".
     const archivedAt = new Date().toISOString();
     const snapshots = rows.map((r) => ({
       id: r.id,
       content: r.content,
       created_at: r.created_at,
       archived_at: archivedAt,
-      likes_count: r.likes_count ?? 0,
+      hold_count: r.hold_count ?? 0,
       position_x: r.position_x ?? 50,
       position_y: r.position_y ?? 50,
       width_px: r.width_px ?? 240,
+      theme_id: r.theme_id ?? null,
     }));
 
     const { error: insErr } = await supabaseAdmin
