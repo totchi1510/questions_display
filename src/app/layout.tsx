@@ -23,7 +23,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    // ja, not en: the question text leans on `word-break: auto-phrase` and
+    // `line-break: strict`, which browsers only apply to content they consider
+    // Japanese. Mis-declaring the language quietly disabled the phrase-aware
+    // wrapping — most visible on narrow screens, where every line breaks.
+    <html lang="ja">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
