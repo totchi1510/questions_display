@@ -522,7 +522,10 @@ export default function QuestionWall({
           zoomOnScroll={navigable}
           zoomOnPinch={navigable}
           zoomOnDoubleClick={navigable}
-          minZoom={0.4}
+          // fitView clamps to this floor (fitViewOptions falls back to it), so
+          // a high minZoom silently crops the wall on narrow viewports: a
+          // phone needs roughly 0.2 to show the whole 16:9 board.
+          minZoom={0.1}
           maxZoom={3}
           nodesDraggable={false}
           nodesConnectable={false}

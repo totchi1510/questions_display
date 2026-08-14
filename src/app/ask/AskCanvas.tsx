@@ -335,7 +335,10 @@ export default function AskCanvas({ existing, themeLabel }: Props) {
           nodeTypes={nodeTypes}
           nodeOrigin={nodeOrigin}
           fitView
-          fitViewOptions={{ padding: 0.1, minZoom: 0.4, maxZoom: 1.5 }}
+          // A phone needs roughly 0.2 to fit the whole 16:9 board; a higher
+          // floor here cropped the canvas, and panning is off, so the hidden
+          // part was unreachable.
+          fitViewOptions={{ padding: 0.1, minZoom: 0.12, maxZoom: 1.5 }}
           translateExtent={[
             [0, 0],
             [BOARD_WIDTH, BOARD_HEIGHT],
@@ -348,7 +351,7 @@ export default function AskCanvas({ existing, themeLabel }: Props) {
           zoomOnScroll={false}
           zoomOnPinch
           zoomOnDoubleClick={false}
-          minZoom={0.4}
+          minZoom={0.12}
           maxZoom={1.5}
           nodesConnectable={false}
           elementsSelectable={false}

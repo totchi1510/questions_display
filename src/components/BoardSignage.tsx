@@ -1,3 +1,4 @@
+import BoardStage from '@/components/BoardStage';
 import QuestionWall from '@/components/QuestionWall';
 import SignageExport from '@/components/SignageExport';
 import type { QuestionLink, QuestionTile } from '@/lib/questions';
@@ -22,14 +23,17 @@ type Props = {
 };
 
 /**
- * A fixed 16:9 "stage" tuned for full-HD signage. On screen it scales to fit
- * its container; `SignageExport` captures it as an exact 1920×1080 PNG, which
- * is the supported way to get an image for the display.
+ * A fixed 16:9 "stage" tuned for full-HD signage. `BoardStage` lays it out at
+ * a constant design size and scales the whole box to fit the viewport, so the
+ * composition holds together on a phone as well as on the display — turn the
+ * phone sideways and the same board simply gets bigger.
  *
- * Printing is NOT that path: browsers ignore the `@page` size, so a saved PDF
- * comes out at the wrong aspect ratio. The print rules below only exist so an
- * accidental Ctrl+P still yields something sane. All interactive chrome
- * carries `no-print`, which doubles as the export filter.
+ * `SignageExport` captures the stage as an exact 1920×1080 PNG, which is the
+ * supported way to get an image for the display. Printing is NOT that path:
+ * browsers ignore the `@page` size, so a saved PDF comes out at the wrong
+ * aspect ratio. The print rules below only exist so an accidental Ctrl+P still
+ * yields something sane. All interactive chrome carries `no-print`, which
+ * doubles as the export filter.
  */
 export default function BoardSignage({
   items,
@@ -42,33 +46,31 @@ export default function BoardSignage({
   error,
 }: Props) {
   return (
-    <div className="board-page min-h-screen bg-neutral-100 flex items-center justify-center p-6">
+    <div className="board-page relative h-dvh w-full overflow-hidden bg-neutral-100 p-3 sm:p-6">
       <style>{`
-        .board-stage {
-          width: 100%;
-          max-width: 1500px;
-          aspect-ratio: 16 / 9;
+        /* Only worth showing where the board is genuinely cramped. */
+        .board-rotate-hint { display: none; }
+        @media (orientation: portrait) and (max-width: 640px) {
+          .board-rotate-hint { display: block; }
         }
         @media print {
-          @page { size: 1920px 1080px landscape; margin: 0; }
+          @page { margin: 0; }
           html, body {
             margin: 0;
             padding: 0;
             background: white;
-            overflow: hidden;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
           }
           .no-print { display: none !important; }
-          .board-page { display: block; min-height: 0; padding: 0; background: white; }
-          /* Fill exactly one printed page rather than a fixed 1920px box, so
-             the layout can never overflow the paper and clip the QR — if the
-             browser honors @page it is 1920×1080, otherwise it still fits. */
+          .board-page { display: block; height: auto; padding: 0; background: white; overflow: visible; }
+          /* Undo the fit-to-viewport shrink so the board prints at its design
+             size instead of at whatever the screen happened to need. */
+          .board-scaler {
+            position: static !important;
+            transform: none !important;
+          }
           .board-stage {
-            width: 100%;
-            height: 100vh;
-            max-width: none;
-            aspect-ratio: auto;
             border-radius: 0;
             box-shadow: none;
             border: 0;
@@ -77,7 +79,8 @@ export default function BoardSignage({
         }
       `}</style>
 
-      <div className="board-stage relative flex flex-col overflow-hidden rounded-3xl border border-black/10 bg-gradient-to-b from-white via-[#FFF7D6] to-white text-black shadow-xl shadow-black/10">
+      <BoardStage>
+      <div className="board-stage relative flex h-full w-full flex-col overflow-hidden rounded-3xl border border-black/10 bg-gradient-to-b from-white via-[#FFF7D6] to-white text-black shadow-xl shadow-black/10">
         <p className="absolute bottom-4 left-12 z-10 text-xs text-gray-400">
           制作: DS部
         </p>
@@ -143,6 +146,11 @@ export default function BoardSignage({
           )}
         </main>
       </div>
+      </BoardStage>
+
+      <p className="board-rotate-hint no-print pointer-events-none absolute inset-x-0 bottom-2 text-center text-[11px] text-gray-500">
+        端末を横向きにすると大きく表示されます
+      </p>
     </div>
   );
 }

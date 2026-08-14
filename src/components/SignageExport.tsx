@@ -19,9 +19,11 @@ export default function SignageExport() {
     setBusy(true);
     try {
       const { toPng } = await import('html-to-image');
-      const rect = stage.getBoundingClientRect();
+      // offsetWidth is the stage's own layout width (its constant design size).
+      // getBoundingClientRect would instead report the fit-to-viewport size,
+      // which would blow the export up by 1/scale on a small screen.
       // The stage is locked to 16:9, so scaling width to 1920 yields 1080 tall.
-      const pixelRatio = OUT_WIDTH / rect.width;
+      const pixelRatio = OUT_WIDTH / stage.offsetWidth;
       const dataUrl = await toPng(stage, {
         pixelRatio,
         cacheBust: true,
